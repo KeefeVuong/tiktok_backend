@@ -19,5 +19,5 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
     # create a meta class
     class Meta:
         model = WeeklyReport
-        fields = ("id", "title","start_date", "end_date")
+        fields = ("id", "owner", "title","start_date", "end_date")
 
