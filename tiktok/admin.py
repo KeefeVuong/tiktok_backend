@@ -4,7 +4,7 @@ from .models import Tiktok, WeeklyReport
 
 class TiktokAdmin(admin.ModelAdmin):
 
-    list_display = ("id", "thumbnail", "like_count", "view_count", "comment_count", "notes", "created", "weekly_report_id", "last_updated")
+    list_display = ("id", "weekly_report_id", "last_updated")
 
 
 class WeeklyReportAdmin(admin.ModelAdmin):
