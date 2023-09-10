@@ -144,7 +144,7 @@ class WeeklyReportListApiView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        weekly_reports = WeeklyReport.objects
+        weekly_reports = WeeklyReport.objects.filter(owner=request.user.id)
         serializer = WeeklyReportSerializer(weekly_reports, many=True)
         for report in serializer.data:  
             report["total_likes"] = 0
@@ -175,6 +175,7 @@ class WeeklyReportListApiView(APIView):
     def post(self, request):
 
         data = {
+            "owner": request.user.id,
             "title": request.data.get("title"),
             "start_date": request.data.get("start_date"),
             "end_date": request.data.get("end_date")
@@ -207,6 +208,6 @@ class WeeklyReportListApiView(APIView):
 
     def delete(self, request):
         for weekly_report_id in request.data.get("ids"):
-            weekly_report = WeeklyReport.objects.get(id = weekly_report_id)
+            weekly_report = WeeklyReport.objects.get(id = weekly_report_id, owner=request.user.id)
             weekly_report.delete()
         return Response({"success": True}, status=status.HTTP_200_OK)

@@ -8,7 +8,7 @@ class TiktokAdmin(admin.ModelAdmin):
 
 
 class WeeklyReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "start_date", "end_date")
+    list_display = ("id", "title", "owner", "start_date", "end_date")
 
 admin.site.register(Tiktok, TiktokAdmin)
 admin.site.register(WeeklyReport, WeeklyReportAdmin)
