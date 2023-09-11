@@ -22,9 +22,10 @@ client_secret = config("IMGUR_CLIENT_SECRET")
 
 client = ImgurClient(client_id, client_secret)
 
-async def get_videos(serializer_instance, n):
+async def get_videos(serializer_instance, delta_1, delta_2):
     async with AsyncTikTokAPI(navigation_retries=5) as api:
         user_tag = "cheekyglo"
+        n = delta_1 + delta_2
         user = await api.user(user_tag, video_limit=n)
         counter = 0
         async for video in user.videos:
@@ -179,8 +180,8 @@ class WeeklyReportListApiView(APIView):
             "start_date": request.data.get("start_date"),
             "end_date": request.data.get("end_date")
         }
-        if Tiktok.objects.filter(created__gte=data["start_date"], created__lte=data["end_date"]).exists():
-            return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
+        # if Tiktok.objects.filter(created__gte=data["start_date"], created__lte=data["end_date"]).exists():
+        #     return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = WeeklyReportSerializer(data=data)
         if serializer.is_valid():
@@ -194,7 +195,7 @@ class WeeklyReportListApiView(APIView):
             delta_1 = b - a
             delta_2 = c - b
 
-            serializer_instance = get_videos_sync(serializer_instance, delta_1.days + delta_2.days)
+            serializer_instance = get_videos_sync(serializer_instance, delta_1.days, delta_2.days)
             return_data = {
                 "title": serializer_instance.title,
                 "start_date": serializer_instance.start_date,
