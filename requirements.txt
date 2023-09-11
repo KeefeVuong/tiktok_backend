@@ -16,7 +16,7 @@ gunicorn==21.2.0
 idna==3.4
 imgurpython==1.1.7
 packaging==23.1
-playwright==1.31.0
+playwright==1.29.0
 pycparser==2.21
 pydantic==2.3.0
 pydantic-core==2.6.3
