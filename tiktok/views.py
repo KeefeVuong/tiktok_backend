@@ -173,7 +173,6 @@ class WeeklyReportListApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-
         data = {
             "owner": request.user.id,
             "title": request.data.get("title"),
@@ -202,6 +201,8 @@ class WeeklyReportListApiView(APIView):
                 "end_date": serializer_instance.end_date
             }
             serializer_instance.save()
+
+        
             return Response(return_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

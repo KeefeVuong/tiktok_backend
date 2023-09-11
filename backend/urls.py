@@ -28,9 +28,9 @@ urlpatterns = [
     path('api-token-auth/', obtain_auth_token),
     path('api/login/', UserApiView.as_view()),
     path('api/tiktoks/', TiktokListApiView.as_view()),
-    path('api/tiktoks/<int:tiktok_id>', TiktokApiView.as_view()),
+    path('api/tiktoks/<str:tiktok_id>', TiktokApiView.as_view()),
     path('api/weekly-reports/', WeeklyReportListApiView.as_view()),
-    path('api/weekly-reports/<int:weekly_report_id>', WeeklyReportApiView.as_view())
+    path('api/weekly-reports/<str:weekly_report_id>', WeeklyReportApiView.as_view())
 ]
 
 # urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
