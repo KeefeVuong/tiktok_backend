@@ -22,10 +22,9 @@ client_secret = config("IMGUR_CLIENT_SECRET")
 
 client = ImgurClient(client_id, client_secret)
 
-async def get_videos(serializer_instance, delta_1, delta_2):
+async def get_videos(serializer_instance, n):
     async with AsyncTikTokAPI(navigation_retries=5) as api:
         user_tag = "cheekyglo"
-        n = delta_1 + delta_2
         user = await api.user(user_tag, video_limit=n)
         counter = 0
         async for video in user.videos:
@@ -195,7 +194,7 @@ class WeeklyReportListApiView(APIView):
             delta_1 = b - a
             delta_2 = c - b
 
-            serializer_instance = get_videos_sync(serializer_instance, delta_1.days, delta_2.days)
+            serializer_instance = get_videos_sync(serializer_instance, delta_1 + delta_2)
             return_data = {
                 "title": serializer_instance.title,
                 "start_date": serializer_instance.start_date,
