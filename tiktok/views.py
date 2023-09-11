@@ -9,7 +9,7 @@ from .serializers import TiktokSerializer, WeeklyReportSerializer
 from .models import Tiktok, WeeklyReport
 from django.db.models import Q
 
-from tiktokapipy.async_api import AsyncTikTokAPI
+from tiktokapipy.api import TikTokAPI
 from tiktokapipy.models.video import video_link
 from asgiref.sync import async_to_sync, sync_to_async
 
@@ -22,19 +22,19 @@ client_secret = config("IMGUR_CLIENT_SECRET")
 
 client = ImgurClient(client_id, client_secret)
 
-async def get_videos(serializer_instance, n):
-    async with AsyncTikTokAPI(navigation_retries=5) as api:
+def get_videos(serializer_instance, n):
+    with TikTokAPI(navigation_retries=5) as api:
         user_tag = "cheekyglo"
-        user = await api.user(user_tag, video_limit=n)
+        user = api.user(user_tag, video_limit=n)
         counter = 0
-        async for video in user.videos:
+        for video in user.videos:
             if n - counter > 7:
                 counter += 1
                 continue
-            create_tiktok = sync_to_async(Tiktok.objects.create)
-            get_video_url = sync_to_async(client.upload_from_url)
-            uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
-            tiktok = await create_tiktok(
+            # create_tiktok = sync_to_async(Tiktok.objects.create)
+            # get_video_url = sync_to_async(client.upload_from_url)
+            uploaded_image = client.upload_from_url(video.video.cover, config=None, anon=True)
+            tiktok = Tiktok.objects.create(
                 weekly_report_id=serializer_instance.id,
                 thumbnail=uploaded_image['link'],
                 like_count=video.stats.digg_count,
@@ -49,12 +49,13 @@ async def get_videos(serializer_instance, n):
                 url=video_link(video.id),
                 created=video.create_time.strftime("%Y-%m-%d")
             )
-            await sync_to_async(tiktok.save)()
+            # await sync_to_async(tiktok.save)()
+            tiktok.save()
         return serializer_instance
 
-async def get_video_by_url(video_url):
-    async with AsyncTikTokAPI(navigation_retries=5) as api:
-        video = await api.video(video_url)  
+def get_video_by_url(video_url):
+    with TikTokAPI(navigation_retries=5) as api:
+        video = api.video(video_url)  
 
         return video
 
@@ -110,7 +111,7 @@ class TiktokListApiView(APIView):
     def put(self, request):
         for tiktok_url in request.data.get("urls"):
             tiktok = Tiktok.objects.get(url=tiktok_url)
-            video = async_to_sync(get_video_by_url)(tiktok_url)
+            video = get_video_by_url(tiktok_url)
             data = {
                 "like_count": video.stats.digg_count,
                 "comment_count": video.stats.comment_count,
@@ -185,7 +186,6 @@ class WeeklyReportListApiView(APIView):
         serializer = WeeklyReportSerializer(data=data)
         if serializer.is_valid():
             serializer_instance = serializer.save()
-            get_videos_sync = async_to_sync(get_videos)
 
             date_format = "%Y-%m-%d"
             a = datetime.strptime(data["start_date"], date_format)
@@ -194,7 +194,7 @@ class WeeklyReportListApiView(APIView):
             delta_1 = b - a
             delta_2 = c - b
 
-            serializer_instance = get_videos_sync(serializer_instance, delta_1 + delta_2)
+            serializer_instance = get_videos(serializer_instance, delta_1 + delta_2)
             return_data = {
                 "title": serializer_instance.title,
                 "start_date": serializer_instance.start_date,
