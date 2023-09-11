@@ -148,7 +148,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # White listing the localhost:3000 port
 # for React
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = (
-    'http://localhost:8000',
-    'http://localhost:5173'
-)
+# CORS_ORIGIN_WHITELIST = (
+#     'http://localhost:8000',
+#     'http://localhost:5173'
+# )
