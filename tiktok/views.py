@@ -25,7 +25,7 @@ imgur_client = ImgurClient(client_id, client_secret)
 
 apify_client = ApifyClient(config("APIFY_KEY"))
 
-def get_videos(serializer_instance, n):
+def get_videos(serializer_instance, n, start_date, end_date):
     counter = 0
     run_input = { 
         "profiles": ["cheekyglo"],
@@ -33,9 +33,10 @@ def get_videos(serializer_instance, n):
     }
     run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
     for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-        if n - counter > 7:
-            counter += 1
+        uploaded_date = datetime.strptime(video["createTimeISO"][:10], "%Y-%m-%d")
+        if start_date >= uploaded_date >= end_date:
             continue
+
         uploaded_image = imgur_client.upload_from_url(video["videoMeta"]["coverUrl"], config=None, anon=True)
         tiktok = Tiktok.objects.create(
             weekly_report_id=serializer_instance.id,
@@ -265,11 +266,10 @@ class WeeklyReportListApiView(APIView):
             date_format = "%Y-%m-%d"
             a = datetime.strptime(data["start_date"], date_format)
             b = datetime.strptime(data["end_date"], date_format)
-            c = datetime.strptime(datetime.today().strftime('%Y-%m-%d'), date_format)
-            delta_1 = b - a
-            delta_2 = c - b
+            c = datetime.strptime(datetime.today().strftime(date_format), date_format)
+            delta = c - a
 
-            serializer_instance = get_videos(serializer_instance, delta_1.days + delta_2.days)
+            serializer_instance = get_videos(serializer_instance, delta.days - 1, a, b)
             return_data = {
                 "title": serializer_instance.title,
                 "start_date": serializer_instance.start_date,
