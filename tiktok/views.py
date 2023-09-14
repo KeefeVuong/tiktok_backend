@@ -15,10 +15,13 @@ from asgiref.sync import async_to_sync, sync_to_async
 
 from datetime import datetime
 from imgurpython import ImgurClient
-from decouple import config
+import json
 
-client_id = config("IMGUR_CLIENT_ID")
-client_secret = config("IMGUR_CLIENT_SECRET")
+with open('/etc/config.json') as config_file:
+    config = json.load(config_file)
+
+client_id = config["IMGUR_CLIENT_ID"]
+client_secret = config["IMGUR_CLIENT_SECRET"]
 
 imgur_client = ImgurClient(client_id, client_secret)
 
