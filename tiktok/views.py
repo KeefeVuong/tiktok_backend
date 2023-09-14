@@ -9,13 +9,12 @@ from .serializers import TiktokSerializer, WeeklyReportSerializer
 from .models import Tiktok, WeeklyReport
 from django.db.models import Q
 
-# from tiktokapipy.async_api import AsyncTikTokAPI
-# from tiktokapipy.models.video import video_link
-# from asgiref.sync import async_to_sync, sync_to_async
+from tiktokapipy.async_api import AsyncTikTokAPI
+from tiktokapipy.models.video import video_link
+from asgiref.sync import async_to_sync, sync_to_async
 
 from datetime import datetime
 from imgurpython import ImgurClient
-from apify_client import ApifyClient
 from decouple import config
 
 client_id = config("IMGUR_CLIENT_ID")
@@ -23,91 +22,89 @@ client_secret = config("IMGUR_CLIENT_SECRET")
 
 imgur_client = ImgurClient(client_id, client_secret)
 
-apify_client = ApifyClient(config("APIFY_KEY"))
+# def get_videos(serializer_instance, n, start_date, end_date):
+#     counter = 0
+#     run_input = { 
+#         "profiles": ["cheekyglo"],
+#         "resultsPerPage": n,
+#     }
+#     run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
+#     for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
+#         uploaded_date = datetime.strptime(video["createTimeISO"][:10], "%Y-%m-%d")
+#         if start_date >= uploaded_date >= end_date:
+#             continue
 
-def get_videos(serializer_instance, n, start_date, end_date):
-    counter = 0
-    run_input = { 
-        "profiles": ["cheekyglo"],
-        "resultsPerPage": n,
-    }
-    run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-    for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-        uploaded_date = datetime.strptime(video["createTimeISO"][:10], "%Y-%m-%d")
-        if start_date >= uploaded_date >= end_date:
-            continue
+#         uploaded_image = imgur_client.upload_from_url(video["videoMeta"]["coverUrl"], config=None, anon=True)
+#         tiktok = Tiktok.objects.create(
+#             weekly_report_id=serializer_instance.id,
+#             thumbnail=uploaded_image['link'],
+#             like_count=video["diggCount"],
+#             comment_count=video["commentCount"],
+#             view_count=video["playCount"],
+#             favourite_count=0,
+#             improvement_like_count=0,
+#             improvement_comment_count=0,
+#             improvement_view_count=0,
+#             improvement_favourite_count=0,
+#             notes="",
+#             url=video["webVideoUrl"],
+#             created=video["createTimeISO"][:10]
+#         )
+#         tiktok.save()
 
-        uploaded_image = imgur_client.upload_from_url(video["videoMeta"]["coverUrl"], config=None, anon=True)
-        tiktok = Tiktok.objects.create(
-            weekly_report_id=serializer_instance.id,
-            thumbnail=uploaded_image['link'],
-            like_count=video["diggCount"],
-            comment_count=video["commentCount"],
-            view_count=video["playCount"],
-            favourite_count=0,
-            improvement_like_count=0,
-            improvement_comment_count=0,
-            improvement_view_count=0,
-            improvement_favourite_count=0,
-            notes="",
-            url=video["webVideoUrl"],
-            created=video["createTimeISO"][:10]
-        )
-        tiktok.save()
+#     return serializer_instance
 
-    return serializer_instance
+# def get_video_by_url(video_urls):
+#     run_input = { 
+#         "postURLs": video_urls
+#     }
+#     run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
+#     video_stats = []
+#     for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
+#         video_stat = {}
+#         video_stat["like_count"] = video["diggCount"],
+#         video_stat["comment_count"] = video["commentCount"],
+#         video_stat["view_count"] = video["playCount"],
 
-def get_video_by_url(video_urls):
-    run_input = { 
-        "postURLs": video_urls
-    }
-    run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-    video_stats = []
-    for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-        video_stat = {}
-        video_stat["like_count"] = video["diggCount"],
-        video_stat["comment_count"] = video["commentCount"],
-        video_stat["view_count"] = video["playCount"],
-
-        video_stats.append(video_stat)
+#         video_stats.append(video_stat)
     
-    return video_stats
+#     return video_stats
 
-# async def get_videos(serializer_instance, n):
-#     async with AsyncTikTokAPI(navigation_retries=5) as api:
-#         user_tag = "cheekyglo"
-#         user = await api.user(user_tag, video_limit=n)
-#         counter = 0
-#         async for video in user.videos:
-#             if n - counter > 7:
-#                 counter += 1
-#                 continue
-#             create_tiktok = sync_to_async(Tiktok.objects.create)
-#             get_video_url = sync_to_async(client.upload_from_url)
-#             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
-#             tiktok = await create_tiktok(
-#                 weekly_report_id=serializer_instance.id,
-#                 thumbnail=uploaded_image['link'],
-#                 like_count=video.stats.digg_count,
-#                 comment_count=video.stats.comment_count,
-#                 view_count=video.stats.play_count,
-#                 favourite_count=video.stats.collect_count,
-#                 improvement_like_count=0,
-#                 improvement_comment_count=0,
-#                 improvement_view_count=0,
-#                 improvement_favourite_count=0,
-#                 notes="",
-#                 url=video_link(video.id),
-#                 created=video.create_time.strftime("%Y-%m-%d")
-#             )
-#             await sync_to_async(tiktok.save)()
-#         return serializer_instance
+async def get_videos(serializer_instance, n, start_date, end_date):
+    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=10) as api:
+        user_tag = "cheekyglo"
+        user = await api.user(user_tag, video_limit=n)
+        async for video in user.videos:
+            uploaded_date = datetime.strptime(video.create_time.strftime("%Y-%m-%d"), "%Y-%m-%d")
+            if start_date >= uploaded_date >= end_date:
+                continue
 
-# async def get_video_by_url(video_url):
-#     async with AsyncTikTokAPI(navigation_retries=5) as api:
-#         video = await api.video(video_url)  
+            create_tiktok = sync_to_async(Tiktok.objects.create)
+            get_video_url = sync_to_async(imgur_client.upload_from_url)
+            uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
+            tiktok = await create_tiktok(
+                weekly_report_id=serializer_instance.id,
+                thumbnail=uploaded_image['link'],
+                like_count=video.stats.digg_count,
+                comment_count=video.stats.comment_count,
+                view_count=video.stats.play_count,
+                favourite_count=video.stats.collect_count,
+                improvement_like_count=0,
+                improvement_comment_count=0,
+                improvement_view_count=0,
+                improvement_favourite_count=0,
+                notes="",
+                url=video_link(video.id),
+                created=video.create_time.strftime("%Y-%m-%d")
+            )
+            await sync_to_async(tiktok.save)()
+        return serializer_instance
 
-#         return video
+async def get_video_by_url(video_url):
+    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=10) as api:
+        video = await api.video(video_url)  
+
+        return video
 
 class UserApiView(APIView):
     permission_classes = [IsAuthenticated]
@@ -159,44 +156,21 @@ class TiktokListApiView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        run_input = { 
-            "postURLs": request.data.get("urls")
-        }
-        run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-        for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-            tiktok = Tiktok.objects.get(url=video["webVideoUrl"])
-            data = {
-                "like_count": video["diggCount"],
-                "comment_count": video["commentCount"],
-                "view_count": video["playCount"],
-                "favourite_count": 0,
-                "improvement_like_count": tiktok.improvement_like_count + (video["diggCount"] - tiktok.like_count),
-                "improvement_comment_count": tiktok.improvement_comment_count + (video["commentCount"] - tiktok.comment_count),
-                "improvement_view_count": tiktok.improvement_view_count + (video["playCount"] - tiktok.view_count),
-                "improvement_favourite_count": 0,
-                "last_updated": datetime.today().strftime('%Y-%m-%d')
-            }
-
-            serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
-            if not serializer.is_valid():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            serializer.save()
-
-        return Response({"success": True}, status=status.HTTP_200_OK)
-
-        # for tiktok_url in request.data.get("urls"):
-        #     tiktok = Tiktok.objects.get(url=tiktok_url)
-        #     video = async_to_sync(get_video_by_url)(tiktok_url)
+        # run_input = { 
+        #     "postURLs": request.data.get("urls")
+        # }
+        # run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
+        # for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
+        #     tiktok = Tiktok.objects.get(url=video["webVideoUrl"])
         #     data = {
-        #         "like_count": video.stats.digg_count,
-        #         "comment_count": video.stats.comment_count,
-        #         "view_count": video.stats.play_count,
-        #         "favourite_count": video.stats.collect_count,
-        #         "improvement_like_count": tiktok.improvement_like_count + (video.stats.digg_count - tiktok.like_count),
-        #         "improvement_comment_count": tiktok.improvement_comment_count + (video.stats.comment_count - tiktok.comment_count),
-        #         "improvement_view_count": tiktok.improvement_view_count + (video.stats.play_count - tiktok.view_count),
-        #         "improvement_favourite_count": tiktok.improvement_favourite_count + (video.stats.collect_count - tiktok.favourite_count),
+        #         "like_count": video["diggCount"],
+        #         "comment_count": video["commentCount"],
+        #         "view_count": video["playCount"],
+        #         "favourite_count": 0,
+        #         "improvement_like_count": tiktok.improvement_like_count + (video["diggCount"] - tiktok.like_count),
+        #         "improvement_comment_count": tiktok.improvement_comment_count + (video["commentCount"] - tiktok.comment_count),
+        #         "improvement_view_count": tiktok.improvement_view_count + (video["playCount"] - tiktok.view_count),
+        #         "improvement_favourite_count": 0,
         #         "last_updated": datetime.today().strftime('%Y-%m-%d')
         #     }
 
@@ -205,6 +179,29 @@ class TiktokListApiView(APIView):
         #         return Response(status=status.HTTP_400_BAD_REQUEST)
 
         #     serializer.save()
+
+        # return Response({"success": True}, status=status.HTTP_200_OK)
+
+        for tiktok_url in request.data.get("urls"):
+            tiktok = Tiktok.objects.get(url=tiktok_url)
+            video = async_to_sync(get_video_by_url)(tiktok_url)
+            data = {
+                "like_count": video.stats.digg_count,
+                "comment_count": video.stats.comment_count,
+                "view_count": video.stats.play_count,
+                "favourite_count": video.stats.collect_count,
+                "improvement_like_count": tiktok.improvement_like_count + (video.stats.digg_count - tiktok.like_count),
+                "improvement_comment_count": tiktok.improvement_comment_count + (video.stats.comment_count - tiktok.comment_count),
+                "improvement_view_count": tiktok.improvement_view_count + (video.stats.play_count - tiktok.view_count),
+                "improvement_favourite_count": tiktok.improvement_favourite_count + (video.stats.collect_count - tiktok.favourite_count),
+                "last_updated": datetime.today().strftime('%Y-%m-%d')
+            }
+
+            serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
+            if not serializer.is_valid():
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            serializer.save()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
@@ -268,8 +265,8 @@ class WeeklyReportListApiView(APIView):
             b = datetime.strptime(data["end_date"], date_format)
             c = datetime.strptime(datetime.today().strftime(date_format), date_format)
             delta = c - a
-
-            serializer_instance = get_videos(serializer_instance, delta.days - 1, a, b)
+            get_videos_sync = async_to_sync(get_videos)
+            serializer_instance = get_videos_sync(serializer_instance, delta.days - 1, a, b)
             return_data = {
                 "title": serializer_instance.title,
                 "start_date": serializer_instance.start_date,
