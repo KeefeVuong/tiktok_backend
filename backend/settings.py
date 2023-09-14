@@ -29,9 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config["DJANGO_SECRET_KEY"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['192.9.172.61']
+ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz','192.9.172.61']
 
 
 # Application definition
@@ -86,6 +86,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
