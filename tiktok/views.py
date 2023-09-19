@@ -74,7 +74,7 @@ imgur_client = ImgurClient(client_id, client_secret)
 #     return video_stats
 
 async def get_videos(serializer_instance, n, start_date, end_date):
-    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=10) as api:
+    async with AsyncTikTokAPI(args=["--disable-gpu", "--single-process"], navigation_retries=5, navigation_timeout=10) as api:
         user_tag = "cheekyglo"
         user = await api.user(user_tag, video_limit=n)
         async for video in user.videos:
@@ -104,7 +104,7 @@ async def get_videos(serializer_instance, n, start_date, end_date):
         return serializer_instance
 
 async def get_video_by_url(video_url):
-    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=10) as api:
+    async with AsyncTikTokAPI(navigator_type='firefox', navigation_retries=5, navigation_timeout=10) as api:
         video = await api.video(video_url)  
 
         return video
