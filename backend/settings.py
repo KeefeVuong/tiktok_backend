@@ -31,7 +31,7 @@ SECRET_KEY = config["DJANGO_SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz','192.9.172.61']
+ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz','192.9.172.61', '127.0.0.1']
 
 
 # Application definition
