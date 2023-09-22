@@ -31,7 +31,7 @@ SECRET_KEY = config["DJANGO_SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz', '192.9.172.61', '127.0.0.1']
+ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz','152.69.175.228', '127.0.0.1']
 #ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -141,9 +141,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
+STATIC_URL = '/static/'
+STATIC_ROOT = "/var/www/tiktok/static"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
