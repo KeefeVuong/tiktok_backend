@@ -132,6 +132,12 @@ class TiktokApiView(APIView):
         serializer.save()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
+    
+    def delete(self, request, tiktok_id):
+        tiktok = Tiktok.objects.get(id=tiktok_id)
+        tiktok.delete()
+
+        return Response({"success": True}, status=status.HTTP_200_OK)
 
 class TiktokListApiView(APIView):
     permission_classes = [IsAuthenticated]
@@ -142,22 +148,22 @@ class TiktokListApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        video = async_to_sync(get_video_by_url)(request.data.get("url"))
-        uploaded_image = imgur_client.upload_from_url(video.video.cover, config=None, anon=True)
+        # uploaded_image = imgur_client.upload_from_url(video.video.cover, config=None, anon=True)
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": uploaded_image['link'],
-            "like_count": video.stats.digg_count,
-            "comment_count": video.stats.comment_count,
-            "view_count": video.stats.play_count,
-            "favourite_count": video.stats.collect_count,
+            "thumbnail": "",
+            "like_count": request.data.get("like_count"),
+            "comment_count": request.data.get("comment_count"),
+            "view_count": request.data.get("view_count"),
+            "favourite_count": request.data.get("favourite_count"),
             "improvement_like_count": 0,
             "improvement_comment_count": 0,
             "improvement_view_count": 0,
             "improvement_favourite_count": 0,
             "notes": "",
-            "url": request.data.get("url"),
-            "created": video.create_time.strftime("%Y-%m-%d")
+            "url": "",
+            "created": datetime.today().strftime("%Y-%m-%d"),
+            "manual": True
         }
         serializer = TiktokSerializer(data=data)
         if serializer.is_valid():
@@ -215,6 +221,7 @@ class TiktokListApiView(APIView):
             serializer.save()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
+    
 
 class WeeklyReportApiView(APIView):
     permission_classes = [IsAuthenticated]
