@@ -73,18 +73,19 @@ imgur_client = ImgurClient(client_id, client_secret)
     
 #     return video_stats
 
-async def get_videos(serializer_instance, n, start_date, end_date):
-    async with AsyncTikTokAPI(args=["--disable-gpu", "--single-process"], navigation_retries=5, navigation_timeout=10) as api:
+async def get_videos(serializer_instance, n):
+    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
         user_tag = "cheekyglo"
         user = await api.user(user_tag, video_limit=n)
         async for video in user.videos:
-            uploaded_date = datetime.strptime(video.create_time.strftime("%Y-%m-%d"), "%Y-%m-%d")
-            if start_date >= uploaded_date >= end_date:
-                continue
-
             create_tiktok = sync_to_async(Tiktok.objects.create)
             get_video_url = sync_to_async(imgur_client.upload_from_url)
             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
+        
+            # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
+            # if await sync_to_async(duplicate_vids.exists)():
+            #     return "duplicate video exists"
+
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
                 thumbnail=uploaded_image['link'],
@@ -96,6 +97,7 @@ async def get_videos(serializer_instance, n, start_date, end_date):
                 improvement_comment_count=0,
                 improvement_view_count=0,
                 improvement_favourite_count=0,
+                hook="",
                 notes="",
                 url=video_link(video.id),
                 created=video.create_time.strftime("%Y-%m-%d")
@@ -104,7 +106,7 @@ async def get_videos(serializer_instance, n, start_date, end_date):
         return serializer_instance
 
 async def get_video_by_url(video_url):
-    async with AsyncTikTokAPI(navigator_type='firefox', navigation_retries=5, navigation_timeout=10) as api:
+    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
         video = await api.video(video_url)  
 
         return video
@@ -121,15 +123,27 @@ class TiktokApiView(APIView):
 
     def put(self, request, tiktok_id):
         tiktok = Tiktok.objects.get(id=tiktok_id)
-        data = {
-            "notes": request.data.get("notes")
-        }
+        data = {}
+
+        if (request.data.get("notes") != ""):
+            data["notes"] = request.data.get("notes")
+        
+    
+        if (request.data.get("hook") != ""):
+            data["hook"] = request.data.get("hook")
+        
         serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
 
         if not serializer.is_valid():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
+
+        return Response({"success": True}, status=status.HTTP_200_OK)
+    
+    def delete(self, request, tiktok_id):
+        tiktok = Tiktok.objects.get(id=tiktok_id)
+        tiktok.delete()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
@@ -142,22 +156,22 @@ class TiktokListApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        video = async_to_sync(get_video_by_url)(request.data.get("url"))
-        uploaded_image = imgur_client.upload_from_url(video.video.cover, config=None, anon=True)
+        # uploaded_image = imgur_client.upload_from_url(video.video.cover, config=None, anon=True)
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": uploaded_image['link'],
-            "like_count": video.stats.digg_count,
-            "comment_count": video.stats.comment_count,
-            "view_count": video.stats.play_count,
-            "favourite_count": video.stats.collect_count,
+            "thumbnail": "",
+            "like_count": request.data.get("like_count"),
+            "comment_count": request.data.get("comment_count"),
+            "view_count": request.data.get("view_count"),
+            "favourite_count": request.data.get("favourite_count"),
             "improvement_like_count": 0,
             "improvement_comment_count": 0,
             "improvement_view_count": 0,
             "improvement_favourite_count": 0,
             "notes": "",
             "url": request.data.get("url"),
-            "created": video.create_time.strftime("%Y-%m-%d")
+            "created": datetime.today().strftime("%Y-%m-%d"),
+            "manual": True
         }
         serializer = TiktokSerializer(data=data)
         if serializer.is_valid():
@@ -215,6 +229,7 @@ class TiktokListApiView(APIView):
             serializer.save()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
+    
 
 class WeeklyReportApiView(APIView):
     permission_classes = [IsAuthenticated]
@@ -261,8 +276,8 @@ class WeeklyReportListApiView(APIView):
         data = {
             "owner": request.user.id,
             "title": request.data.get("title"),
-            "start_date": request.data.get("start_date"),
-            "end_date": request.data.get("end_date")
+            # "start_date": request.data.get("start_date"),
+            # "end_date": request.data.get("end_date")
         }
         # if Tiktok.objects.filter(created__gte=data["start_date"], created__lte=data["end_date"]).exists():
         #     return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
@@ -271,17 +286,18 @@ class WeeklyReportListApiView(APIView):
         if serializer.is_valid():
             serializer_instance = serializer.save()
 
-            date_format = "%Y-%m-%d"
-            a = datetime.strptime(data["start_date"], date_format)
-            b = datetime.strptime(data["end_date"], date_format)
-            c = datetime.strptime(datetime.today().strftime(date_format), date_format)
-            delta = c - a
+            # date_format = "%Y-%m-%d"
+            # a = datetime.strptime(data["start_date"], date_format)
+            # b = datetime.strptime(data["end_date"], date_format)
+            # c = datetime.strptime(datetime.today().strftime(date_format), date_format)
+            # delta = c - a
             get_videos_sync = async_to_sync(get_videos)
-            serializer_instance = get_videos_sync(serializer_instance, delta.days - 1, a, b)
+            serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")))
+            if serializer_instance == "duplicate video exists":
+                return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
+
             return_data = {
                 "title": serializer_instance.title,
-                "start_date": serializer_instance.start_date,
-                "end_date": serializer_instance.end_date
             }
             serializer_instance.save()
 

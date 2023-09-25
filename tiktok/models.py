@@ -6,12 +6,10 @@ class WeeklyReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.TextField()
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    start_date = models.DateField()
-    end_date = models.DateField()
 
 class Tiktok(models.Model):
     weekly_report = models.ForeignKey(WeeklyReport, on_delete=models.CASCADE)
-    thumbnail = models.TextField()
+    thumbnail = models.TextField(null=True, blank=True)
     like_count = models.IntegerField()
     view_count = models.IntegerField()
     comment_count = models.IntegerField()
@@ -21,9 +19,11 @@ class Tiktok(models.Model):
     improvement_comment_count = models.IntegerField()
     improvement_favourite_count = models.IntegerField()
     notes = models.TextField(null=True, blank=True)
-    url = models.TextField()
+    hook = models.TextField(null=True, blank=True)
+    url = models.TextField(null=True, blank=True)
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
+    manual = models.BooleanField(default=False)
 
     def __str__(self):
         return self.thumbnail
