@@ -5,8 +5,8 @@ from rest_framework import permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 
-from .serializers import TiktokSerializer, WeeklyReportSerializer
-from .models import Tiktok, WeeklyReport
+from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer
+from .models import Tiktok, WeeklyReport, Client
 from django.db.models import Q
 
 from tiktokapipy.async_api import AsyncTikTokAPI
@@ -73,9 +73,8 @@ imgur_client = ImgurClient(client_id, client_secret)
     
 #     return video_stats
 
-async def get_videos(serializer_instance, n):
+async def get_videos(serializer_instance, n, user_tag):
     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
-        user_tag = "cheekyglo"
         user = await api.user(user_tag, video_limit=n)
         async for video in user.videos:
             create_tiktok = sync_to_async(Tiktok.objects.create)
@@ -110,6 +109,39 @@ async def get_video_by_url(video_url):
         video = await api.video(video_url)  
 
         return video
+
+class ClientApiView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        client = Client.objects.get(user=request.user)
+        return Response({"tiktok_account": client.tiktok_account}, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        data = {
+            "user": request.user.id,
+            "tiktok_account": request.data.get("tiktok_account")
+        }
+
+        serializer = ClientSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer.save()
+        return Response({"success": True}, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        client = Client.objects.get(user=request.user)
+        data = {
+            "tiktok_account": request.data.get("tiktok_account")
+        }
+
+        serializer = ClientSerializer(instance=client, data=data, partial=True)
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer.save()
+        return Response({"success": True}, status=status.HTTP_200_OK)
 
 class UserApiView(APIView):
     permission_classes = [IsAuthenticated]
@@ -281,6 +313,7 @@ class WeeklyReportListApiView(APIView):
             # "start_date": request.data.get("start_date"),
             # "end_date": request.data.get("end_date")
         }
+
         # if Tiktok.objects.filter(created__gte=data["start_date"], created__lte=data["end_date"]).exists():
         #     return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -294,7 +327,10 @@ class WeeklyReportListApiView(APIView):
             # c = datetime.strptime(datetime.today().strftime(date_format), date_format)
             # delta = c - a
             get_videos_sync = async_to_sync(get_videos)
-            serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")))
+            user_tag = Client.objects.get(user=request.user).tiktok_account
+            if user_tag == "":
+                user_tag = "cheekyglo"
+            serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")), user_tag)
             if serializer_instance == "duplicate video exists":
                 return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
 

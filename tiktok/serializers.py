@@ -3,7 +3,7 @@
 from rest_framework import serializers
  
 # import the todo data model
-from .models import Tiktok, WeeklyReport
+from .models import Tiktok, WeeklyReport, Client
  
 # create a serializer class
 class TiktokSerializer(serializers.ModelSerializer):
@@ -20,4 +20,11 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = WeeklyReport
         fields = ("id", "owner", "title")
+
+class ClientSerializer(serializers.ModelSerializer):
+ 
+    # create a meta class
+    class Meta:
+        model = Client
+        fields = ("user", "tiktok_account")
 
