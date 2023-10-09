@@ -20,6 +20,7 @@ class Tiktok(models.Model):
     improvement_favourite_count = models.IntegerField()
     notes = models.TextField(null=True, blank=True)
     hook = models.TextField(null=True, blank=True)
+    improvements = models.TextField(null=True, blank=True)
     url = models.TextField(null=True, blank=True)
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)

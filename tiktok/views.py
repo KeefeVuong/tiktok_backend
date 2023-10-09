@@ -128,10 +128,12 @@ class TiktokApiView(APIView):
         if (request.data.get("notes") != ""):
             data["notes"] = request.data.get("notes")
         
-    
         if (request.data.get("hook") != ""):
             data["hook"] = request.data.get("hook")
         
+        if (request.data.get("improvements") != ""):
+            data["improvements"] = request.data.get("improvements")
+
         serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
 
         if not serializer.is_valid():
