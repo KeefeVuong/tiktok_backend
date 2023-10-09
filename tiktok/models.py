@@ -2,6 +2,10 @@ from djongo import models
 import uuid
 from django.contrib.auth.models import User
 
+class Client(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    tiktok_account = models.TextField()
+
 class WeeklyReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.TextField()
@@ -20,6 +24,7 @@ class Tiktok(models.Model):
     improvement_favourite_count = models.IntegerField()
     notes = models.TextField(null=True, blank=True)
     hook = models.TextField(null=True, blank=True)
+    improvements = models.TextField(null=True, blank=True)
     url = models.TextField(null=True, blank=True)
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
