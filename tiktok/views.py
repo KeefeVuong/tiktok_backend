@@ -105,9 +105,13 @@ async def get_videos(serializer_instance, n, user_tag):
             await sync_to_async(tiktok.save)()
         return serializer_instance
 
-async def get_video_by_url(video_url):
+async def get_video_by_url(video_url):   
     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
-        video = await api.video(video_url)  
+        video = None
+        try:
+            video = await api.video(video_url)  
+        except:
+            pass
 
         return video
 
@@ -246,6 +250,10 @@ class TiktokListApiView(APIView):
         for tiktok_url in request.data.get("urls"):
             tiktok = Tiktok.objects.get(url=tiktok_url)
             video = async_to_sync(get_video_by_url)(tiktok_url)
+
+            if video == None:
+                continue
+
             data = {
                 "like_count": video.stats.digg_count,
                 "comment_count": video.stats.comment_count,
