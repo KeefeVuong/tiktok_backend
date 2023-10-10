@@ -18,6 +18,7 @@ class Tiktok(models.Model):
     view_count = models.IntegerField()
     comment_count = models.IntegerField()
     favourite_count = models.IntegerField()
+    share_count = models.IntegerField()
     improvement_like_count = models.IntegerField()
     improvement_view_count = models.IntegerField()
     improvement_comment_count = models.IntegerField()
