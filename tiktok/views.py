@@ -248,30 +248,31 @@ class TiktokListApiView(APIView):
         # return Response({"success": True}, status=status.HTTP_200_OK)
 
         for tiktok_url in request.data.get("urls"):
-            tiktok = Tiktok.objects.get(url=tiktok_url)
+            tiktoks = Tiktok.objects.filter(url=tiktok_url)
             video = async_to_sync(get_video_by_url)(tiktok_url)
 
             if video == None:
                 continue
 
-            data = {
-                "like_count": video.stats.digg_count,
-                "comment_count": video.stats.comment_count,
-                "view_count": video.stats.play_count,
-                "favourite_count": video.stats.collect_count,
-                "share_count": video.stats.share_count,
-                "improvement_like_count": tiktok.improvement_like_count + (video.stats.digg_count - tiktok.like_count),
-                "improvement_comment_count": tiktok.improvement_comment_count + (video.stats.comment_count - tiktok.comment_count),
-                "improvement_view_count": tiktok.improvement_view_count + (video.stats.play_count - tiktok.view_count),
-                "improvement_favourite_count": tiktok.improvement_favourite_count + (video.stats.collect_count - tiktok.favourite_count),
-                "last_updated": datetime.today().strftime('%Y-%m-%d')
-            }
 
-            serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
-            if not serializer.is_valid():
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+            for tiktok in tiktoks:
+                data = {
+                    "like_count": video.stats.digg_count,
+                    "comment_count": video.stats.comment_count,
+                    "view_count": video.stats.play_count,
+                    "favourite_count": video.stats.collect_count,
+                    "share_count": video.stats.share_count,
+                    "improvement_like_count": tiktok.improvement_like_count + (video.stats.digg_count - tiktok.like_count),
+                    "improvement_comment_count": tiktok.improvement_comment_count + (video.stats.comment_count - tiktok.comment_count),
+                    "improvement_view_count": tiktok.improvement_view_count + (video.stats.play_count - tiktok.view_count),
+                    "improvement_favourite_count": tiktok.improvement_favourite_count + (video.stats.collect_count - tiktok.favourite_count),
+                    "last_updated": datetime.today().strftime('%Y-%m-%d')
+                }
+                serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
+                if not serializer.is_valid():
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            serializer.save()
+                serializer.save()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
     
