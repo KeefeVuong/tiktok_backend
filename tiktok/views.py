@@ -282,8 +282,28 @@ class WeeklyReportApiView(APIView):
 
     def get(self, request, weekly_report_id):
         tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id)
-        serializer = TiktokSerializer(tiktoks, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        tiktok_serializer = TiktokSerializer(tiktoks, many=True)
+
+        weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
+        weekly_report_serializer = WeeklyReportSerializer(weekly_report)
+
+        return Response({"tiktok": tiktok_serializer.data, "weekly_report": weekly_report_serializer.data}, status=status.HTTP_200_OK)
+    
+    def put(self, request, weekly_report_id):
+        weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
+        data = {}
+
+        if (request.data.get("notes") != None):
+            data["notes"] = request.data.get("notes")
+        
+        serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+
+        return Response({"success": True}, status=status.HTTP_200_OK)
 
 
 class WeeklyReportListApiView(APIView):

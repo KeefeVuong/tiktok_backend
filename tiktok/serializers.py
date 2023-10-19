@@ -19,7 +19,7 @@ class WeeklyReportSerializer(serializers.ModelSerializer):
     # create a meta class
     class Meta:
         model = WeeklyReport
-        fields = ("id", "owner", "title")
+        fields = ("id", "owner", "title", "notes")
 
 class ClientSerializer(serializers.ModelSerializer):
  

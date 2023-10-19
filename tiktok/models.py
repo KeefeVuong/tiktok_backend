@@ -10,6 +10,7 @@ class WeeklyReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.TextField()
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    notes = models.TextField(null=True, blank=True)
 
 class Tiktok(models.Model):
     weekly_report = models.ForeignKey(WeeklyReport, on_delete=models.CASCADE)
