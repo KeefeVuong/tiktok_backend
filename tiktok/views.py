@@ -171,6 +171,14 @@ class TiktokApiView(APIView):
         if (request.data.get("improvements") != None):
             data["improvements"] = request.data.get("improvements")
 
+        if request.data.get("order") != None:
+            og_order = tiktok.order
+            tiktok_2 = Tiktok.objects.get(weekly_report=tiktok.weekly_report_id, order=request.data.get("order"))
+
+            tiktok.order = tiktok_2.order
+            tiktok_2.order = og_order
+            tiktok_2.save()
+
         serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
 
         if not serializer.is_valid():
@@ -221,39 +229,12 @@ class TiktokListApiView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
-        # run_input = { 
-        #     "postURLs": request.data.get("urls")
-        # }
-        # run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-        # for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-        #     tiktok = Tiktok.objects.get(url=video["webVideoUrl"])
-        #     data = {
-        #         "like_count": video["diggCount"],
-        #         "comment_count": video["commentCount"],
-        #         "view_count": video["playCount"],
-        #         "favourite_count": 0,
-        #         "improvement_like_count": tiktok.improvement_like_count + (video["diggCount"] - tiktok.like_count),
-        #         "improvement_comment_count": tiktok.improvement_comment_count + (video["commentCount"] - tiktok.comment_count),
-        #         "improvement_view_count": tiktok.improvement_view_count + (video["playCount"] - tiktok.view_count),
-        #         "improvement_favourite_count": 0,
-        #         "last_updated": datetime.today().strftime('%Y-%m-%d')
-        #     }
-
-        #     serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
-        #     if not serializer.is_valid():
-        #         return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        #     serializer.save()
-
-        # return Response({"success": True}, status=status.HTTP_200_OK)
-
         for tiktok_url in request.data.get("urls"):
             tiktoks = Tiktok.objects.filter(url=tiktok_url)
             video = async_to_sync(get_video_by_url)(tiktok_url)
 
             if video == None:
                 continue
-
 
             for tiktok in tiktoks:
                 data = {
@@ -281,7 +262,7 @@ class WeeklyReportApiView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, weekly_report_id):
-        tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id)
+        tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id).order_by("order")
         tiktok_serializer = TiktokSerializer(tiktoks, many=True)
 
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)

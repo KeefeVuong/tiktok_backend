@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import Tiktok, WeeklyReport, Client
 
 class TiktokAdmin(admin.ModelAdmin):
-    list_display = ("id", "weekly_report_id", "last_updated")
+    list_display = ("id", "weekly_report_id", "last_updated", "order")
 
 
 class WeeklyReportAdmin(admin.ModelAdmin):
