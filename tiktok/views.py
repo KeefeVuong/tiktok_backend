@@ -73,10 +73,17 @@ imgur_client = ImgurClient(client_id, client_secret)
     
 #     return video_stats
 
+async def get_async_enumerate(async_gen):
+    idx = 0
+    async for item in async_gen:
+        yield idx, item
+        idx += 1
+
 async def get_videos(serializer_instance, n, user_tag):
     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
         user = await api.user(user_tag, video_limit=n)
-        async for video in user.videos:
+
+        async for idx, video in get_async_enumerate(user.videos):
             create_tiktok = sync_to_async(Tiktok.objects.create)
             get_video_url = sync_to_async(imgur_client.upload_from_url)
             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
@@ -100,7 +107,8 @@ async def get_videos(serializer_instance, n, user_tag):
                 hook="",
                 notes="",
                 url=video_link(video.id),
-                created=video.create_time.strftime("%Y-%m-%d")
+                created=video.create_time.strftime("%Y-%m-%d"),
+                order=idx
             )
             await sync_to_async(tiktok.save)()
         return serializer_instance
