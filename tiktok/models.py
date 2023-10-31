@@ -31,6 +31,7 @@ class Tiktok(models.Model):
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
     manual = models.BooleanField(default=False)
+    order = models.IntegerField()
 
     def __str__(self):
         return self.thumbnail
