@@ -211,7 +211,7 @@ class TiktokListApiView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def post(self, request):
-        # uploaded_image = imgur_client.upload_from_url(video.video.cover, config=None, anon=True)
+        order = len(Tiktok.objects.filter(weekly_report=request.data.get("weekly_report")))
         data = {
             "weekly_report": request.data.get("weekly_report"),
             "thumbnail": "",
@@ -227,7 +227,8 @@ class TiktokListApiView(APIView):
             "notes": "",
             "url": request.data.get("url"),
             "created": datetime.today().strftime("%Y-%m-%d"),
-            "manual": True
+            "manual": True,
+            "order": order
         }
         serializer = TiktokSerializer(data=data)
         if serializer.is_valid():
