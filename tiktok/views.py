@@ -18,6 +18,8 @@ from TikTokApi import TikTokApi
 from datetime import datetime
 from imgurpython import ImgurClient
 import json
+import requests
+import os
 
 with open('/etc/config.json') as config_file:
     config = json.load(config_file)
@@ -83,21 +85,30 @@ async def get_async_enumerate(async_gen):
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
-        await api.create_sessions(num_sessions=1, sleep_after=3, headless=False)
+        await api.create_sessions(num_sessions=1, sleep_after=3)
         user = api.user(user_tag)
 
         async for idx, video in get_async_enumerate(user.videos(count=n)):
             create_tiktok = sync_to_async(Tiktok.objects.create)
-            get_video_url = sync_to_async(imgur_client.upload_from_url)
-            uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
-        
+#            get_video_url = sync_to_async(imgur_client.upload_from_url)
+#            uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
+            if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
+                os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
+
+            if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
+                os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
+
+            img_data = requests.get(video.as_dict["video"]["cover"]).content
+            with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png", "wb") as handler:
+                handler.write(img_data)
             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
             # if await sync_to_async(duplicate_vids.exists)():
             #     return "duplicate video exists"
 
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
-                thumbnail=uploaded_image['link'],
+#                thumbnail=uploaded_image['link'],
+		thumbnail=f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png",
                 like_count=video.stats["diggCount"],
                 comment_count=video.stats["commentCount"],
                 view_count=video.stats["playCount"],
