@@ -107,8 +107,7 @@ async def get_videos(serializer_instance, n, user_tag):
 
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
-#                thumbnail=uploaded_image['link'],
-		thumbnail=f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png",
+		        thumbnail=f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png",
                 like_count=video.stats["diggCount"],
                 comment_count=video.stats["commentCount"],
                 view_count=video.stats["playCount"],
