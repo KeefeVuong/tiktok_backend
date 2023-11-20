@@ -315,6 +315,9 @@ class WeeklyReportApiView(APIView):
 
         if (request.data.get("notes") != None):
             data["notes"] = request.data.get("notes")
+
+        if (request.data.get("title") != None):
+            data["title"] = request.data.get("title")
         
         serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
 
