@@ -40,19 +40,18 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
         return ""
 
     owner = serializer_instance.owner
-    title = serializer_instance.title.replace("/", "\/")
     weekly_report_id = serializer_instance.id
 
     if not os.path.exists(f"/var/www/tiktok/static/{owner}"):
         os.makedirs(f"/var/www/tiktok/static/{owner}")
 
-    if not os.path.exists(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}"):
-        os.makedirs(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}")
+    if not os.path.exists(f"/var/www/tiktok/static/{owner}/{weekly_report_id}"):
+        os.makedirs(f"/var/www/tiktok/static/{owner}/{weekly_report_id}")
 
-    with open(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}/{video_id}.png", "wb") as handler:
+    with open(f"/var/www/tiktok/static/{owner}/{weekly_report_id}/{video_id}.png", "wb") as handler:
         handler.write(thumbnail)
 
-    return f"https://keefe-tk-be.xyz/static/{owner}/{title}_{weekly_report_id}/{video_id}.png"
+    return f"https://keefe-tk-be.xyz/static/{owner}/{weekly_report_id}/{video_id}.png"
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
