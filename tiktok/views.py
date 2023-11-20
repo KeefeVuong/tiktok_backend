@@ -20,6 +20,7 @@ from imgurpython import ImgurClient
 import json
 import requests
 import os
+import shutil
 
 with open('/etc/config.json') as config_file:
     config = json.load(config_file)
@@ -214,8 +215,6 @@ class TiktokApiView(APIView):
 
         thumbnail_path = f"/var/www/tiktok/static/{request.user}/{tiktok.weekly_report.id}/{tiktok_id}.png"
 
-        print(thumbnail_path)
-
         if os.path.exists(thumbnail_path):
             os.remove(thumbnail_path)
 
@@ -235,7 +234,7 @@ class TiktokListApiView(APIView):
         order = len(Tiktok.objects.filter(weekly_report=request.data.get("weekly_report")))
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), request.data.get("url").split("/")[-1], request.data.get("thumbnail").read()),
+            "thumbnail": "",
             "like_count": request.data.get("like_count"),
             "comment_count": request.data.get("comment_count"),
             "view_count": request.data.get("view_count"),
@@ -253,7 +252,10 @@ class TiktokListApiView(APIView):
         }
         serializer = TiktokSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer_instance = serializer.save()
+            serializer_instance.thumbnail =  save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), serializer_instance.id, request.data.get("thumbnail").read())
+            serializer_instance.save()            
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -397,5 +399,10 @@ class WeeklyReportListApiView(APIView):
     def delete(self, request):
         for weekly_report_id in request.data.get("ids"):
             weekly_report = WeeklyReport.objects.get(id = weekly_report_id, owner=request.user.id)
+            folder_path = f"/var/www/tiktok/static/{request.user}/{weekly_report_id}"
+
+            if os.path.exists(folder_path):
+                shutil.rmtree(folder_path)
+
             weekly_report.delete()
         return Response({"success": True}, status=status.HTTP_200_OK)
