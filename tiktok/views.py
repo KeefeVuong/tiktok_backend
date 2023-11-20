@@ -24,58 +24,10 @@ import os
 with open('/etc/config.json') as config_file:
     config = json.load(config_file)
 
-client_id = config["IMGUR_CLIENT_ID"]
-client_secret = config["IMGUR_CLIENT_SECRET"]
+# client_id = config["IMGUR_CLIENT_ID"]
+# client_secret = config["IMGUR_CLIENT_SECRET"]
 
-imgur_client = ImgurClient(client_id, client_secret)
-
-# def get_videos(serializer_instance, n, start_date, end_date):
-#     counter = 0
-#     run_input = { 
-#         "profiles": ["cheekyglo"],
-#         "resultsPerPage": n,
-#     }
-#     run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-#     for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-#         uploaded_date = datetime.strptime(video["createTimeISO"][:10], "%Y-%m-%d")
-#         if start_date >= uploaded_date >= end_date:
-#             continue
-
-#         uploaded_image = imgur_client.upload_from_url(video["videoMeta"]["coverUrl"], config=None, anon=True)
-#         tiktok = Tiktok.objects.create(
-#             weekly_report_id=serializer_instance.id,
-#             thumbnail=uploaded_image['link'],
-#             like_count=video["diggCount"],
-#             comment_count=video["commentCount"],
-#             view_count=video["playCount"],
-#             favourite_count=0,
-#             improvement_like_count=0,
-#             improvement_comment_count=0,
-#             improvement_view_count=0,
-#             improvement_favourite_count=0,
-#             notes="",
-#             url=video["webVideoUrl"],
-#             created=video["createTimeISO"][:10]
-#         )
-#         tiktok.save()
-
-#     return serializer_instance
-
-# def get_video_by_url(video_urls):
-#     run_input = { 
-#         "postURLs": video_urls
-#     }
-#     run = apify_client.actor("clockworks/free-tiktok-scraper").call(run_input=run_input)
-#     video_stats = []
-#     for video in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-#         video_stat = {}
-#         video_stat["like_count"] = video["diggCount"],
-#         video_stat["comment_count"] = video["commentCount"],
-#         video_stat["view_count"] = video["playCount"],
-
-#         video_stats.append(video_stat)
-    
-#     return video_stats
+# imgur_client = ImgurClient(client_id, client_secret)
 
 async def get_async_enumerate(async_gen):
     idx = 0
@@ -84,6 +36,9 @@ async def get_async_enumerate(async_gen):
         idx += 1
 
 def save_thumbnail(serializer_instance, video_id, thumbnail):
+    if config["DEBUG"]:
+        return ""
+
     if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
         os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
 
@@ -91,8 +46,9 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
         os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
 
     with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png", "wb") as handler:
-        for chunk in thumbnail.chunks():
-            handler.write(chunk)
+        # for chunk in thumbnail.chunks():
+        #     handler.write(chunk)
+        handler.write(thumbnail)
 
     return f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png"
 
@@ -275,7 +231,7 @@ class TiktokListApiView(APIView):
         order = len(Tiktok.objects.filter(weekly_report=request.data.get("weekly_report")))
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), request.data.get("url").split("/")[-1], request.data.get("thumbnail")),
+            "thumbnail": save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), request.data.get("url").split("/")[-1], request.data.get("thumbnail").read()),
             "like_count": request.data.get("like_count"),
             "comment_count": request.data.get("comment_count"),
             "view_count": request.data.get("view_count"),

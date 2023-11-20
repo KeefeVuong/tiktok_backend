@@ -1,0 +1,17 @@
+#!/bin/sh
+
+sudo mkdir -pv /var/{log,run}/gunicorn/ && sudo chown -cR ubuntu:ubuntu /var/{log,run}/gunicorn/
+
+# Stop gunicorn
+sudo killall gunicorn > /dev/null 2>&1
+
+# Activate virtual environment
+. ~/tiktok_backend/env/bin/activate
+
+# Start gunicorn with the specified configuration file
+gunicorn -c config/gunicorn/prod.py
+
+# Restart Nginx
+sudo systemctl restart nginx
+
+echo "PROD Deployed!"
