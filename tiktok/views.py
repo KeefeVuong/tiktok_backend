@@ -208,6 +208,12 @@ class TiktokApiView(APIView):
     
     def delete(self, request, tiktok_id):
         tiktok = Tiktok.objects.get(id=tiktok_id)
+
+        thumbnail_path = f"/var/www/tiktok/static/{request.user}/{tiktok.weekly_report}/{tiktok_id}.png"
+
+        if os.path.exists(thumbnail_path):
+            os.remove(thumbnail_path)
+
         tiktok.delete()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
