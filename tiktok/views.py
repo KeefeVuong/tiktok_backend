@@ -39,16 +39,20 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
     if config["DEBUG"]:
         return ""
 
-    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
-        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
+    owner = serializer_instance.owner
+    title = serializer_instance.title.replace("/", "\/")
+    weekly_report_id = serializer_instance.id
 
-    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
-        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
+    if not os.path.exists(f"/var/www/tiktok/static/{owner}"):
+        os.makedirs(f"/var/www/tiktok/static/{owner}")
 
-    with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png", "wb") as handler:
+    if not os.path.exists(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}"):
+        os.makedirs(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}")
+
+    with open(f"/var/www/tiktok/static/{owner}/{title}_{weekly_report_id}/{video_id}.png", "wb") as handler:
         handler.write(thumbnail)
 
-    return f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png"
+    return f"https://keefe-tk-be.xyz/static/{owner}/{title}_{weekly_report_id}/{video_id}.png"
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
@@ -66,7 +70,7 @@ async def get_videos(serializer_instance, n, user_tag):
 
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
-		thumbnail=save_thumbnail(serializer_instance, video.id, requests.get(video.as_dict["video"]["cover"]).content),
+		        thumbnail=save_thumbnail(serializer_instance, video.id, requests.get(video.as_dict["video"]["cover"]).content),
                 like_count=video.stats["diggCount"],
                 comment_count=video.stats["commentCount"],
                 view_count=video.stats["playCount"],
