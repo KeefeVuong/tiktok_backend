@@ -13,6 +13,8 @@ from tiktokapipy.async_api import AsyncTikTokAPI
 from tiktokapipy.models.video import video_link
 from asgiref.sync import async_to_sync, sync_to_async
 
+from TikTokApi import TikTokApi
+
 from datetime import datetime
 from imgurpython import ImgurClient
 import json
@@ -80,13 +82,14 @@ async def get_async_enumerate(async_gen):
         idx += 1
 
 async def get_videos(serializer_instance, n, user_tag):
-    async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
-        user = await api.user(user_tag, video_limit=n)
+    async with TikTokApi() as api:
+        await api.create_sessions(num_sessions=1, sleep_after=3, headless=False)
+        user = api.user(user_tag)
 
-        async for idx, video in get_async_enumerate(user.videos):
+        async for idx, video in get_async_enumerate(user.videos(count=n)):
             create_tiktok = sync_to_async(Tiktok.objects.create)
             get_video_url = sync_to_async(imgur_client.upload_from_url)
-            uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
+            uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
         
             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
             # if await sync_to_async(duplicate_vids.exists)():
@@ -95,11 +98,11 @@ async def get_videos(serializer_instance, n, user_tag):
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
                 thumbnail=uploaded_image['link'],
-                like_count=video.stats.digg_count,
-                comment_count=video.stats.comment_count,
-                view_count=video.stats.play_count,
-                favourite_count=video.stats.collect_count,
-                share_count=video.stats.share_count,
+                like_count=video.stats["diggCount"],
+                comment_count=video.stats["commentCount"],
+                view_count=video.stats["playCount"],
+                favourite_count=video.stats["collectCount"],
+                share_count=video.stats["shareCount"],
                 improvement_like_count=0,
                 improvement_comment_count=0,
                 improvement_view_count=0,
@@ -112,6 +115,41 @@ async def get_videos(serializer_instance, n, user_tag):
             )
             await sync_to_async(tiktok.save)()
         return serializer_instance
+
+
+# async def get_videos(serializer_instance, n, user_tag):
+#     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
+#         user = await api.user(user_tag, video_limit=n)
+
+#         async for idx, video in get_async_enumerate(user.videos):
+#             create_tiktok = sync_to_async(Tiktok.objects.create)
+#             get_video_url = sync_to_async(imgur_client.upload_from_url)
+#             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
+        
+#             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
+#             # if await sync_to_async(duplicate_vids.exists)():
+#             #     return "duplicate video exists"
+
+#             tiktok = await create_tiktok(
+#                 weekly_report_id=serializer_instance.id,
+#                 thumbnail=uploaded_image['link'],
+#                 like_count=video.stats.digg_count,
+#                 comment_count=video.stats.comment_count,
+#                 view_count=video.stats.play_count,
+#                 favourite_count=video.stats.collect_count,
+#                 share_count=video.stats.share_count,
+#                 improvement_like_count=0,
+#                 improvement_comment_count=0,
+#                 improvement_view_count=0,
+#                 improvement_favourite_count=0,
+#                 hook="",
+#                 notes="",
+#                 url=video_link(video.id),
+#                 created=video.create_time.strftime("%Y-%m-%d"),
+#                 order=idx
+#             )
+#             await sync_to_async(tiktok.save)()
+#         return serializer_instance
 
 async def get_video_by_url(video_url):   
     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
@@ -245,17 +283,24 @@ class TiktokListApiView(APIView):
             if video == None:
                 continue
 
+
             for tiktok in tiktoks:
+                like_count=video.stats.digg_count
+                comment_count=video.stats.comment_count
+                view_count=video.stats.play_count
+                favourite_count=video.stats.collect_count
+                share_count=video.stats.share_count
+
                 data = {
-                    "like_count": video.stats.digg_count,
-                    "comment_count": video.stats.comment_count,
-                    "view_count": video.stats.play_count,
-                    "favourite_count": video.stats.collect_count,
-                    "share_count": video.stats.share_count,
-                    "improvement_like_count": tiktok.improvement_like_count + (video.stats.digg_count - tiktok.like_count),
-                    "improvement_comment_count": tiktok.improvement_comment_count + (video.stats.comment_count - tiktok.comment_count),
-                    "improvement_view_count": tiktok.improvement_view_count + (video.stats.play_count - tiktok.view_count),
-                    "improvement_favourite_count": tiktok.improvement_favourite_count + (video.stats.collect_count - tiktok.favourite_count),
+                    "like_count": like_count,
+                    "comment_count": comment_count,
+                    "view_count": view_count,
+                    "favourite_count": favourite_count,
+                    "share_count": share_count,
+                    "improvement_like_count": tiktok.improvement_like_count + (like_count - tiktok.like_count),
+                    "improvement_comment_count": tiktok.improvement_comment_count + (comment_count - tiktok.comment_count),
+                    "improvement_view_count": tiktok.improvement_view_count + (view_count - tiktok.view_count),
+                    "improvement_favourite_count": tiktok.improvement_favourite_count + (favourite_count - tiktok.favourite_count),
                     "last_updated": datetime.today().strftime('%Y-%m-%d')
                 }
                 serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
