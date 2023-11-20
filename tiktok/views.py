@@ -69,7 +69,7 @@ async def get_videos(serializer_instance, n, user_tag):
 
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
-		        thumbnail=save_thumbnail(serializer_instance, video.id, requests.get(video.as_dict["video"]["cover"]).content),
+		        thumbnail="",
                 like_count=video.stats["diggCount"],
                 comment_count=video.stats["commentCount"],
                 view_count=video.stats["playCount"],
@@ -85,6 +85,9 @@ async def get_videos(serializer_instance, n, user_tag):
                 created=video.create_time.strftime("%Y-%m-%d"),
                 order=idx
             )
+
+            tiktok.thumbnail = save_thumbnail(serializer_instance, tiktok.id, requests.get(video.as_dict["video"]["cover"]).content)
+
             await sync_to_async(tiktok.save)()
         return serializer_instance
 
