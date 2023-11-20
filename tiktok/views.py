@@ -83,6 +83,19 @@ async def get_async_enumerate(async_gen):
         yield idx, item
         idx += 1
 
+def save_thumbnail(serializer_instance, video_id, thumbnail):
+    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
+        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
+
+    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
+        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
+
+    img_data = requests.get(thumbnail).content
+    with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png", "wb") as handler:
+        handler.write(img_data)
+
+    return f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"
+
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
         await api.create_sessions(num_sessions=1, sleep_after=3)
@@ -260,9 +273,10 @@ class TiktokListApiView(APIView):
     
     def post(self, request):
         order = len(Tiktok.objects.filter(weekly_report=request.data.get("weekly_report")))
+
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": "",
+            "thumbnail": save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), request.data.get("url").split("/")[-1], request.FILES.get("thumbnail")),
             "like_count": request.data.get("like_count"),
             "comment_count": request.data.get("comment_count"),
             "view_count": request.data.get("view_count"),
