@@ -83,7 +83,7 @@ async def get_async_enumerate(async_gen):
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
-        await api.create_sessions(num_sessions=1, sleep_after=3, headless=False)
+        await api.create_sessions(num_sessions=1, sleep_after=3)
         user = api.user(user_tag)
 
         async for idx, video in get_async_enumerate(user.videos(count=n)):
