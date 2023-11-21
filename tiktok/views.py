@@ -39,15 +39,15 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
     if config["DEBUG"]:
         return ""
 
-    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
-        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
+    thumbnail_path = f"/var/www/tiktok/static/{serializer_instance.owner}"
+    if not os.path.exists(thumbnail_path):
+        os.makedirs(thumbnail_path)
 
+    thumbnail_path += ""
     if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
         os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
 
     with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png", "wb") as handler:
-        # for chunk in thumbnail.chunks():
-        #     handler.write(chunk)
         handler.write(thumbnail)
 
     return f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png"

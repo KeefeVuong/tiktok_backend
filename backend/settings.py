@@ -31,7 +31,8 @@ SECRET_KEY = config["DJANGO_SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config["DEBUG"]
 
-ALLOWED_HOSTS = ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz','152.69.175.228', '127.0.0.1']
+ALLOWED_HOSTS = config["ALLOWED_HOSTS"]
+# ['keefe-tk-be.xyz', 'www.keefe-tk-be.xyz', '127.0.0.1']
 #ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -93,10 +94,6 @@ SESSION_COOKIE_SECURE = False
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': str(BASE_DIR / 'db.sqlite3'),
-    # }
     'default': {
         'ENGINE': 'djongo',
         'NAME': 'test',
@@ -110,7 +107,7 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
+# AUTH_PASSWORD_VALIDATORS = [
     # {
     #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     # },
@@ -123,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     # {
     #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     # },
-]
+# ]
 
 
 # Internationalization
@@ -156,8 +153,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #CORS_ORIGIN_ALLOW_ALL = True
 #CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'https://keefevuong.github.io',
-]
+CORS_ALLOWED_ORIGINS = config["CORS_ALLOWED_ORIGINS"]
+
+# [
+#     'http://localhost:5173',
+#     'http://127.0.0.1:5173',
+#     'https://keefevuong.github.io',
+# ]
