@@ -20,6 +20,7 @@ from imgurpython import ImgurClient
 import json
 import requests
 import os
+import shutil
 
 with open('/etc/config.json') as config_file:
     config = json.load(config_file)
@@ -39,18 +40,19 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
     if config["DEBUG"]:
         return ""
 
-    thumbnail_path = f"/var/www/tiktok/static/{serializer_instance.owner}"
-    if not os.path.exists(thumbnail_path):
-        os.makedirs(thumbnail_path)
+    owner = serializer_instance.owner
+    weekly_report_id = serializer_instance.id
 
-    thumbnail_path += ""
-    if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
-        os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
+    if not os.path.exists(f"/var/www/tiktok/static/{owner}"):
+        os.makedirs(f"/var/www/tiktok/static/{owner}")
 
-    with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png", "wb") as handler:
+    if not os.path.exists(f"/var/www/tiktok/static/{owner}/{weekly_report_id}"):
+        os.makedirs(f"/var/www/tiktok/static/{owner}/{weekly_report_id}")
+
+    with open(f"/var/www/tiktok/static/{owner}/{weekly_report_id}/{video_id}.png", "wb") as handler:
         handler.write(thumbnail)
 
-    return f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video_id}.png"
+    return f"https://keefe-tk-be.xyz/static/{owner}/{weekly_report_id}/{video_id}.png"
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
@@ -59,24 +61,16 @@ async def get_videos(serializer_instance, n, user_tag):
 
         async for idx, video in get_async_enumerate(user.videos(count=n)):
             create_tiktok = sync_to_async(Tiktok.objects.create)
-#            get_video_url = sync_to_async(imgur_client.upload_from_url)
-#            uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
-            if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}"):
-                os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}")
+#           get_video_url = sync_to_async(imgur_client.upload_from_url)
+#           uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
 
-            if not os.path.exists(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}"):
-                os.makedirs(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}")
-
-            img_data = requests.get(video.as_dict["video"]["cover"]).content
-            with open(f"/var/www/tiktok/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png", "wb") as handler:
-                handler.write(img_data)
             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
             # if await sync_to_async(duplicate_vids.exists)():
             #     return "duplicate video exists"
 
             tiktok = await create_tiktok(
                 weekly_report_id=serializer_instance.id,
-		        thumbnail=f"https://keefe-tk-be.xyz/static/{serializer_instance.owner}/{serializer_instance.title}_{serializer_instance.id}/{video.id}.png",
+		        thumbnail="",
                 like_count=video.stats["diggCount"],
                 comment_count=video.stats["commentCount"],
                 view_count=video.stats["playCount"],
@@ -92,6 +86,9 @@ async def get_videos(serializer_instance, n, user_tag):
                 created=video.create_time.strftime("%Y-%m-%d"),
                 order=idx
             )
+
+            tiktok.thumbnail = save_thumbnail(serializer_instance, tiktok.id, requests.get(video.as_dict["video"]["cover"]).content)
+
             await sync_to_async(tiktok.save)()
         return serializer_instance
 
@@ -215,6 +212,12 @@ class TiktokApiView(APIView):
     
     def delete(self, request, tiktok_id):
         tiktok = Tiktok.objects.get(id=tiktok_id)
+
+        thumbnail_path = f"/var/www/tiktok/static/{request.user}/{tiktok.weekly_report.id}/{tiktok_id}.png"
+
+        if os.path.exists(thumbnail_path):
+            os.remove(thumbnail_path)
+
         tiktok.delete()
 
         return Response({"success": True}, status=status.HTTP_200_OK)
@@ -231,7 +234,7 @@ class TiktokListApiView(APIView):
         order = len(Tiktok.objects.filter(weekly_report=request.data.get("weekly_report")))
         data = {
             "weekly_report": request.data.get("weekly_report"),
-            "thumbnail": save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), request.data.get("url").split("/")[-1], request.data.get("thumbnail").read()),
+            "thumbnail": "",
             "like_count": request.data.get("like_count"),
             "comment_count": request.data.get("comment_count"),
             "view_count": request.data.get("view_count"),
@@ -249,7 +252,10 @@ class TiktokListApiView(APIView):
         }
         serializer = TiktokSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            serializer_instance = serializer.save()
+            serializer_instance.thumbnail =  save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), serializer_instance.id, request.data.get("thumbnail").read())
+            serializer_instance.save()            
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -309,6 +315,9 @@ class WeeklyReportApiView(APIView):
 
         if (request.data.get("notes") != None):
             data["notes"] = request.data.get("notes")
+
+        if (request.data.get("title") != None):
+            data["title"] = request.data.get("title")
         
         serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
 
@@ -393,5 +402,10 @@ class WeeklyReportListApiView(APIView):
     def delete(self, request):
         for weekly_report_id in request.data.get("ids"):
             weekly_report = WeeklyReport.objects.get(id = weekly_report_id, owner=request.user.id)
+            folder_path = f"/var/www/tiktok/static/{request.user}/{weekly_report_id}"
+
+            if os.path.exists(folder_path):
+                shutil.rmtree(folder_path)
+
             weekly_report.delete()
         return Response({"success": True}, status=status.HTTP_200_OK)
