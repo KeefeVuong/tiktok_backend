@@ -1,28 +1,26 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import permissions
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authtoken.models import Token
-
-from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer
-from .models import Tiktok, WeeklyReport, Client
-from django.db.models import Q
-
-from tiktokapipy.async_api import AsyncTikTokAPI
-from tiktokapipy.models.video import video_link
-from asgiref.sync import async_to_sync, sync_to_async
-
-from TikTokApi import TikTokApi
-
 from datetime import datetime
-from imgurpython import ImgurClient
 import json
-import requests
 import os
 import shutil
 
-STATIC_FOLDER_PATH = "/var/www/tiktok/static"
+from asgiref.sync import async_to_sync, sync_to_async
+from django.db.models import Q
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.authtoken.models import Token
+from django.conf import settings
+
+from TikTokApi import TikTokApi
+from imgurpython import ImgurClient
+from tiktokapipy.async_api import AsyncTikTokAPI
+from tiktokapipy.models.video import video_link
+
+from .models import Tiktok, WeeklyReport, Client
+from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer
+
+
+STATIC_FOLDER_PATH = settings.STATIC_ROOT
 
 with open('/etc/config.json') as config_file:
     config = json.load(config_file)
@@ -37,6 +35,14 @@ async def get_async_enumerate(async_gen):
     async for item in async_gen:
         yield idx, item
         idx += 1
+
+def get_data(data, key):
+    val = request.data.get(key)
+    if val != None:
+        data[key] = val
+
+def calculate_improvement(improvement_count, curr_count, prev_count):
+    return improvement_count + (curr_count - prev_count)
 
 def save_thumbnail(serializer_instance, video_id, thumbnail):
     if config["DEBUG"]:
@@ -176,18 +182,13 @@ class ClientApiView(APIView):
 class TiktokApiView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def grab_data(data, key):
-        val = request.data.get(key)
-        if val != None:
-            data[key] = val
-
     def put(self, request, tiktok_id):
         tiktok = Tiktok.objects.get(id=tiktok_id)
 
         data = {}
-        grab_data(data, "notes")
-        grab_data(data, "hook")
-        grab_data(data, "improvements")
+        get_data(data, "notes")
+        get_data(data, "hook")
+        get_data(data, "improvements")
 
         if request.data.get("order") != None:
             og_order = tiktok.order
@@ -217,7 +218,8 @@ class TiktokApiView(APIView):
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
-# up to here
+# need to make the HTTP req match its definition.
+# POST req below is creating a singular tiktok but its in TiktokList?? Doesn't make sense.
 
 class TiktokListApiView(APIView):
     permission_classes = [IsAuthenticated]
@@ -257,6 +259,7 @@ class TiktokListApiView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
     def put(self, request):
         for tiktok_url in request.data.get("urls"):
             tiktoks = Tiktok.objects.filter(url=tiktok_url)
@@ -279,10 +282,10 @@ class TiktokListApiView(APIView):
                     "view_count": view_count,
                     "favourite_count": favourite_count,
                     "share_count": share_count,
-                    "improvement_like_count": tiktok.improvement_like_count + (like_count - tiktok.like_count),
-                    "improvement_comment_count": tiktok.improvement_comment_count + (comment_count - tiktok.comment_count),
-                    "improvement_view_count": tiktok.improvement_view_count + (view_count - tiktok.view_count),
-                    "improvement_favourite_count": tiktok.improvement_favourite_count + (favourite_count - tiktok.favourite_count),
+                    "improvement_like_count": calculate_improvement(tiktok.improvement_like_count, like_count, tiktok.like_count),
+                    "improvement_comment_count": calculate_improvement(tiktok.improvement_comment_count, comment_count, tiktok.comment_count),
+                    "improvement_view_count": calculate_improvement(tiktok.improvement_view_count, view_count, tiktok.view_count),
+                    "improvement_favourite_count": calculate_improvement(tiktok.improvement_favourite_count, favourite_count, tiktok.favourite_count),
                     "last_updated": datetime.today().strftime('%Y-%m-%d')
                 }
                 serializer = TiktokSerializer(instance=tiktok, data=data, partial=True)
@@ -309,12 +312,8 @@ class WeeklyReportApiView(APIView):
     def put(self, request, weekly_report_id):
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
         data = {}
-
-        if (request.data.get("notes") != None):
-            data["notes"] = request.data.get("notes")
-
-        if (request.data.get("title") != None):
-            data["title"] = request.data.get("title")
+        get_data(data, "notes")
+        get_data(title, "title")
         
         serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
 
@@ -362,36 +361,26 @@ class WeeklyReportListApiView(APIView):
         data = {
             "owner": request.user.id,
             "title": request.data.get("title"),
-            # "start_date": request.data.get("start_date"),
-            # "end_date": request.data.get("end_date")
         }
 
-        # if Tiktok.objects.filter(created__gte=data["start_date"], created__lte=data["end_date"]).exists():
-        #     return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = WeeklyReportSerializer(data=data)
         if serializer.is_valid():
             serializer_instance = serializer.save()
 
-            # date_format = "%Y-%m-%d"
-            # a = datetime.strptime(data["start_date"], date_format)
-            # b = datetime.strptime(data["end_date"], date_format)
-            # c = datetime.strptime(datetime.today().strftime(date_format), date_format)
-            # delta = c - a
             get_videos_sync = async_to_sync(get_videos)
             user_tag = Client.objects.get(user=request.user).tiktok_account
             if user_tag == "":
                 user_tag = "cheekyglo"
+
             serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")), user_tag)
-            if serializer_instance == "duplicate video exists":
-                return Response({"success": False}, status=status.HTTP_400_BAD_REQUEST)
 
             return_data = {
                 "title": serializer_instance.title,
             }
+
             serializer_instance.save()
 
-        
             return Response(return_data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -399,7 +388,7 @@ class WeeklyReportListApiView(APIView):
     def delete(self, request):
         for weekly_report_id in request.data.get("ids"):
             weekly_report = WeeklyReport.objects.get(id = weekly_report_id, owner=request.user.id)
-            folder_path = f"/var/www/tiktok/static/{request.user}/{weekly_report_id}"
+            folder_path = f"{STATIC_FOLDER_PATH}/{request.user}/{weekly_report_id}"
 
             if os.path.exists(folder_path):
                 shutil.rmtree(folder_path)
