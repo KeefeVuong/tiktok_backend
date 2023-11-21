@@ -19,14 +19,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.authtoken.views import obtain_auth_token
-from tiktok.views import TiktokListApiView, WeeklyReportListApiView, WeeklyReportApiView, TiktokApiView, UserApiView, ClientApiView
+from tiktok.views import TiktokListApiView, WeeklyReportListApiView, WeeklyReportApiView, TiktokApiView, ClientApiView
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-token-auth/', obtain_auth_token),
-    path('api/login/', UserApiView.as_view()),
     path('api/client/', ClientApiView.as_view()),
     path('api/tiktoks/', TiktokListApiView.as_view()),
     path('api/tiktoks/<int:tiktok_id>', TiktokApiView.as_view()),
