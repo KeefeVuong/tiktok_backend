@@ -6,6 +6,7 @@ import shutil
 from asgiref.sync import async_to_sync, sync_to_async
 from django.db.models import Q
 from rest_framework import permissions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
@@ -18,6 +19,7 @@ from tiktokapipy.models.video import video_link
 
 from .models import Tiktok, WeeklyReport, Client
 from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer
+from .permissions import IsGuestUser
 
 
 STATIC_FOLDER_PATH = settings.STATIC_ROOT
@@ -145,8 +147,8 @@ async def get_video_by_url(video_url):
 
         return video
 
-class ClientApiView(APIView):
-    permission_classes = [IsAuthenticated]
+class ClientAPI(APIView):
+    permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request):
         client = Client.objects.get(user=request.user)
@@ -179,8 +181,8 @@ class ClientApiView(APIView):
         return Response({"success": True}, status=status.HTTP_200_OK)
 
     
-class TiktokApiView(APIView):
-    permission_classes = [IsAuthenticated]
+class TiktokAPI(APIView):
+    permission_classes = [IsAuthenticated, IsGuestUser]
 
     def put(self, request, tiktok_id):
         tiktok = Tiktok.objects.get(id=tiktok_id)
@@ -218,11 +220,8 @@ class TiktokApiView(APIView):
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
-# need to make the HTTP req match its definition.
-# POST req below is creating a singular tiktok but its in TiktokList?? Doesn't make sense.
-
-class TiktokListApiView(APIView):
-    permission_classes = [IsAuthenticated]
+class TiktoksAPI(APIView):
+    permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request):
         tiktoks = Tiktok.objects.all()
@@ -297,8 +296,8 @@ class TiktokListApiView(APIView):
         return Response({"success": True}, status=status.HTTP_200_OK)
     
 
-class WeeklyReportApiView(APIView):
-    permission_classes = [IsAuthenticated]
+class WeeklyReportAPI(APIView):
+    permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request, weekly_report_id):
         tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id).order_by("order")
@@ -325,8 +324,8 @@ class WeeklyReportApiView(APIView):
         return Response({"success": True}, status=status.HTTP_200_OK)
 
 
-class WeeklyReportListApiView(APIView):
-    permission_classes = [IsAuthenticated]
+class WeeklyReportsAPI(APIView):
+    permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request):
         weekly_reports = WeeklyReport.objects.filter(owner=request.user.id)
@@ -370,6 +369,7 @@ class WeeklyReportListApiView(APIView):
 
             get_videos_sync = async_to_sync(get_videos)
             user_tag = Client.objects.get(user=request.user).tiktok_account
+    
             if user_tag == "":
                 user_tag = "cheekyglo"
 
