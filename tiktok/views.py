@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import os
 import shutil
+import requests
 
 from asgiref.sync import async_to_sync, sync_to_async
 from django.db.models import Q
@@ -66,7 +67,7 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
-        await api.create_sessions(num_sessions=1, sleep_after=3)
+        await api.create_sessions(num_sessions=1, sleep_after=3, headless=False)
         user = api.user(user_tag)
 
         async for idx, video in get_async_enumerate(user.videos(count=n)):
@@ -104,21 +105,15 @@ async def get_videos(serializer_instance, n, user_tag):
 
 
 # async def get_videos(serializer_instance, n, user_tag):
-#     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
+#     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30, headless=False) as api:
 #         user = await api.user(user_tag, video_limit=n)
 
 #         async for idx, video in get_async_enumerate(user.videos):
 #             create_tiktok = sync_to_async(Tiktok.objects.create)
-#             get_video_url = sync_to_async(imgur_client.upload_from_url)
-#             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
-        
-#             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
-#             # if await sync_to_async(duplicate_vids.exists)():
-#             #     return "duplicate video exists"
 
 #             tiktok = await create_tiktok(
 #                 weekly_report_id=serializer_instance.id,
-#                 thumbnail=uploaded_image['link'],
+#                 thumbnail="",
 #                 like_count=video.stats.digg_count,
 #                 comment_count=video.stats.comment_count,
 #                 view_count=video.stats.play_count,
@@ -134,6 +129,13 @@ async def get_videos(serializer_instance, n, user_tag):
 #                 created=video.create_time.strftime("%Y-%m-%d"),
 #                 order=idx
 #             )
+
+#             tiktok.thumbnail = save_thumbnail(
+#                 serializer_instance, 
+#                 tiktok.id, 
+#                 requests.get(video.video.cover).content
+#             )
+            
 #             await sync_to_async(tiktok.save)()
 #         return serializer_instance
 
