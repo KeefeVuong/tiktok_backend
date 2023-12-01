@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import os
 import shutil
+import requests
 
 from asgiref.sync import async_to_sync, sync_to_async
 from django.db.models import Q
@@ -38,8 +39,7 @@ async def get_async_enumerate(async_gen):
         yield idx, item
         idx += 1
 
-def get_data(data, key):
-    val = request.data.get(key)
+def get_data(data, val, key):
     if val != None:
         data[key] = val
 
@@ -100,21 +100,15 @@ async def get_videos(serializer_instance, n, user_tag):
 
 
 # async def get_videos(serializer_instance, n, user_tag):
-#     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
+#     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30, headless=False) as api:
 #         user = await api.user(user_tag, video_limit=n)
 
 #         async for idx, video in get_async_enumerate(user.videos):
 #             create_tiktok = sync_to_async(Tiktok.objects.create)
-#             get_video_url = sync_to_async(imgur_client.upload_from_url)
-#             uploaded_image = await get_video_url(video.video.cover, config=None, anon=True)
-        
-#             # duplicate_vids = await sync_to_async(Tiktok.objects.filter)(url=video_link(video.id))
-#             # if await sync_to_async(duplicate_vids.exists)():
-#             #     return "duplicate video exists"
 
 #             tiktok = await create_tiktok(
 #                 weekly_report_id=serializer_instance.id,
-#                 thumbnail=uploaded_image['link'],
+#                 thumbnail="",
 #                 like_count=video.stats.digg_count,
 #                 comment_count=video.stats.comment_count,
 #                 view_count=video.stats.play_count,
@@ -130,6 +124,13 @@ async def get_videos(serializer_instance, n, user_tag):
 #                 created=video.create_time.strftime("%Y-%m-%d"),
 #                 order=idx
 #             )
+
+#             tiktok.thumbnail = save_thumbnail(
+#                 serializer_instance, 
+#                 tiktok.id, 
+#                 requests.get(video.video.cover).content
+#             )
+            
 #             await sync_to_async(tiktok.save)()
 #         return serializer_instance
 
@@ -184,9 +185,9 @@ class TiktokAPI(APIView):
         tiktok = Tiktok.objects.get(id=tiktok_id)
 
         data = {}
-        get_data(data, "notes")
-        get_data(data, "hook")
-        get_data(data, "improvements")
+        get_data(data, request.data.get("notes"), "notes")
+        get_data(data, request.data.get("hook"), "hook")
+        get_data(data, request.data.get("improvements"), "improvements")
 
         if request.data.get("order") != None:
             og_order = tiktok.order
@@ -307,8 +308,8 @@ class WeeklyReportAPI(APIView):
     def put(self, request, weekly_report_id):
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
         data = {}
-        get_data(data, "notes")
-        get_data(title, "title")
+        get_data(data, request.data.get("notes"), "notes")
+        get_data(data, request.data.get("title"), "title")
         
         serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
 
