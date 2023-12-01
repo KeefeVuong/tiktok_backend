@@ -30,7 +30,6 @@ class Tiktok(models.Model):
     url = models.TextField(null=True, blank=True)
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
-    manual = models.BooleanField(default=False)
     order = models.IntegerField()
 
     def __str__(self):
