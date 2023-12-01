@@ -27,7 +27,6 @@ class TiktokSerializer(serializers.ModelSerializer):
             "notes", 
             "hook", 
             "improvements", 
-            "manual", 
             "url", 
             "created", 
             "last_updated", 
