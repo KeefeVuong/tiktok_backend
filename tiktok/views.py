@@ -93,11 +93,7 @@ async def get_videos(serializer_instance, n, user_tag):
                 order=idx
             )
 
-            tiktok.thumbnail = save_thumbnail(
-                serializer_instance, 
-                tiktok.id, 
-                requests.get(video.as_dict["video"]["cover"]).content
-            )
+            tiktok.thumbnail = save_thumbnail(serializer_instance, tiktok.id, requests.get(video.as_dict["video"]["cover"]).content)
 
             await sync_to_async(tiktok.save)()
         return serializer_instance
