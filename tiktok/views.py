@@ -39,8 +39,7 @@ async def get_async_enumerate(async_gen):
         yield idx, item
         idx += 1
 
-def get_data(data, key):
-    val = request.data.get(key)
+def get_data(data, val, key):
     if val != None:
         data[key] = val
 
@@ -67,7 +66,7 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
 
 async def get_videos(serializer_instance, n, user_tag):
     async with TikTokApi() as api:
-        await api.create_sessions(num_sessions=1, sleep_after=3, headless=False)
+        await api.create_sessions(num_sessions=1, sleep_after=3)
         user = api.user(user_tag)
 
         async for idx, video in get_async_enumerate(user.videos(count=n)):
@@ -190,9 +189,9 @@ class TiktokAPI(APIView):
         tiktok = Tiktok.objects.get(id=tiktok_id)
 
         data = {}
-        get_data(data, "notes")
-        get_data(data, "hook")
-        get_data(data, "improvements")
+        get_data(data, request.data.get("notes"), "notes")
+        get_data(data, request.data.get("hook"), "hook")
+        get_data(data, request.data.get("improvements"), "improvements")
 
         if request.data.get("order") != None:
             og_order = tiktok.order
@@ -313,8 +312,8 @@ class WeeklyReportAPI(APIView):
     def put(self, request, weekly_report_id):
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
         data = {}
-        get_data(data, "notes")
-        get_data(title, "title")
+        get_data(data, request.data.get("notes"), "notes")
+        get_data(data, request.data.get("title"), "title")
         
         serializer = WeeklyReportSerializer(instance=weekly_report, data=data, partial=True)
 
