@@ -213,7 +213,14 @@ class TiktokAPI(APIView):
         if os.path.exists(thumbnail_path):
             os.remove(thumbnail_path)
 
+        weekly_report_id = tiktok.weekly_report_id
         tiktok.delete()
+
+        tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id).order_by("order")
+        for idx, tiktok in enumerate(tiktoks):
+            tiktok.order = idx
+            tiktok.save()
+    
 
         return Response({"success": True}, status=status.HTTP_200_OK)
 
