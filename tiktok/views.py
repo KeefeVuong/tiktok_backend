@@ -251,7 +251,7 @@ class TiktoksAPI(APIView):
             serializer_instance.thumbnail =  save_thumbnail(WeeklyReport.objects.get(id=request.data.get("weekly_report")), serializer_instance.id, request.data.get("thumbnail").read())
             serializer_instance.save()            
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -378,7 +378,7 @@ class WeeklyReportsAPI(APIView):
 
             serializer_instance.save()
 
-            return Response(return_data, status=status.HTTP_201_CREATED)
+            return Response(return_data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
