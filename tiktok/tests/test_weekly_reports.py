@@ -7,7 +7,7 @@ def test_weekly_report_get_associated_tiktoks(user, auth_client, weekly_report, 
     response = auth_client.get(f"/api/weekly-reports/{weekly_report.id}")
     assert response.status_code == 200
     assert response.data["weekly_report"] == {
-        'id': f"{weekly_report.id}",
+        'id': weekly_report.id,
         'owner': user.id, 
         'title': 'Test Report', 
         'notes': "",
@@ -41,7 +41,8 @@ def test_weekly_reports_create(auth_client):
     assert len(Tiktok.objects.filter(weekly_report_id=new_weekly_report.id)) == 2
 
 @pytest.mark.django_db
-def test_weekly_reports_delete(auth_client, weekly_report):
+def test_weekly_reports_delete(auth_client, weekly_report, tiktok):
     response = auth_client.delete("/api/weekly-reports/", {"ids": [weekly_report.id]}, format="json")
     assert response.status_code == 200
     assert len(WeeklyReport.objects.all()) == 0
+    assert len(Tiktok.objects.all()) == 0
