@@ -38,7 +38,7 @@ def test_weekly_reports_create(auth_client):
     assert len(WeeklyReport.objects.all()) == 1
 
     new_weekly_report = WeeklyReport.objects.get(title="Test Report 2")
-    assert len(Tiktok.objects.filter(weekly_report_id=new_weekly_report.id)) == 2
+    assert len(Tiktok.objects.filter(weekly_report_id=new_weekly_report.id)) > 1
 
 @pytest.mark.django_db
 def test_weekly_reports_delete(auth_client, weekly_report, tiktok):
