@@ -21,11 +21,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.9  # Change this to your preferred Python version
-
-    - name: Debug Environment
-      run: env
-    - name: Debug Secrets
-      run: echo "Secrets= ${{ toJson(secrets) }}"
       
     - name: Set up Config JSON
       run: echo "${{ secrets.CONFIG }}" | sudo tee /etc/config.json
