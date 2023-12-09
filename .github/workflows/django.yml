@@ -20,9 +20,7 @@ jobs:
         python-version: 3.9  # Change this to your preferred Python version
 
     - name: Set up Config JSON
-      run: |
-        echo "${{ secrets.CONFIG }}"
-        echo "${{ secrets.CONFIG }}" | sudo tee /etc/config.json
+      run: echo ${{ secrets.CONFIG }} | sudo tee /etc/config.json
       
     - name: Install dependencies
       run: |
