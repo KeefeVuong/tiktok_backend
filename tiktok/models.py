@@ -1,5 +1,4 @@
-from djongo import models
-import uuid
+from django.db import models
 from django.contrib.auth.models import User
 
 class Client(models.Model):
@@ -7,7 +6,6 @@ class Client(models.Model):
     tiktok_account = models.TextField()
 
 class WeeklyReport(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.TextField()
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     notes = models.TextField(null=True, blank=True)
