@@ -23,8 +23,5 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # Change this to your requirements file
 
-    - name: Run Django Migrations
-      run: python manage.py migrate
-
     - name: Run Pytest
       run: pytest
