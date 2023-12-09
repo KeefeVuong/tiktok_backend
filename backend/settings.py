@@ -94,12 +94,20 @@ SESSION_COOKIE_SECURE = False
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'djongo',
+    #     'NAME': 'test',
+    #     'CLIENT': {
+    #         'host': config["DB_HOST"],
+    #     }
+    # }
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': 'test',
-        'CLIENT': {
-            'host': config["DB_HOST"],
-        }
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': config["PGSQL_NAME"], 
+        'USER': config["PGSQL_USER"], 
+        'PASSWORD': config["PGSQL_PW"],
+        'HOST': config["PGSQL_HOST"], 
+        'PORT': config["PGSQL_PORT"],
     }
 }
 
