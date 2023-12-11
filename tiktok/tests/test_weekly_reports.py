@@ -11,8 +11,9 @@ def test_weekly_report_get_associated_tiktoks(user, auth_client, weekly_report, 
         'owner': user.id, 
         'title': 'Test Report', 
         'notes': "",
+        'platform': "tiktok"
     }
-    assert len(response.data["tiktok"]) == 1
+    assert len(response.data["videos"]) == 1
 
 @pytest.mark.django_db
 def test_weekly_report_update(auth_client, weekly_report):
@@ -31,7 +32,7 @@ def test_weekly_reports_get(auth_client, weekly_report):
 
 @pytest.mark.django_db
 def test_weekly_reports_create(auth_client):
-    response = auth_client.post("/api/weekly-reports/", {"title": "Test Report 2", "number_of_videos": 2}, format="json")
+    response = auth_client.post("/api/weekly-reports/", {"title": "Test Report 2", "number_of_videos": 2, "platform": "tiktok"}, format="json")
     assert response.status_code == 200
     assert response.data["title"] == "Test Report 2"
 

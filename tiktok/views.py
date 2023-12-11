@@ -18,8 +18,8 @@ from imgurpython import ImgurClient
 from tiktokapipy.async_api import AsyncTikTokAPI
 from tiktokapipy.models.video import video_link
 
-from .models import Tiktok, WeeklyReport, Client
-from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer
+from .models import Tiktok, WeeklyReport, Client, Instagram
+from .serializers import TiktokSerializer, WeeklyReportSerializer, ClientSerializer, InstagramSerializer
 from .permissions import IsGuestUser
 
 
@@ -64,17 +64,14 @@ def save_thumbnail(serializer_instance, video_id, thumbnail):
 
     return f"https://keefe-tk-be.xyz/static/{owner}/{weekly_report_id}/{video_id}.png"
 
-async def get_videos(serializer_instance, n, user_tag):
+async def get_videos(serializer_instance, n, user_tag, platform):
     async with TikTokApi() as api:
         await api.create_sessions(num_sessions=1, sleep_after=3)
         user = api.user(user_tag)
 
+        create_video = sync_to_async(Tiktok.objects.create) if platform == "tiktok" else sync_to_async(Instagram.objects.create)
         async for idx, video in get_async_enumerate(user.videos(count=n)):
-            create_tiktok = sync_to_async(Tiktok.objects.create)
-#           get_video_url = sync_to_async(imgur_client.upload_from_url)
-#           uploaded_image = await get_video_url(video.as_dict["video"]["cover"], config=None, anon=True)
-
-            tiktok = await create_tiktok(
+            new_video = await create_video(
                 weekly_report_id=serializer_instance.id,
 		        thumbnail="",
                 like_count=video.stats["diggCount"],
@@ -93,9 +90,9 @@ async def get_videos(serializer_instance, n, user_tag):
                 order=idx
             )
 
-            tiktok.thumbnail = save_thumbnail(serializer_instance, tiktok.id, requests.get(video.as_dict["video"]["cover"]).content)
+            new_video.thumbnail = save_thumbnail(serializer_instance, new_video.id, requests.get(video.as_dict["video"]["cover"]).content)
 
-            await sync_to_async(tiktok.save)()
+            await sync_to_async(new_video.save)()
         return serializer_instance
 
 
@@ -133,6 +130,19 @@ async def get_videos(serializer_instance, n, user_tag):
             
 #             await sync_to_async(tiktok.save)()
 #         return serializer_instance
+
+def determine_platform(platform, weekly_report_id):
+    videos = None
+    video_serializer = None
+
+    if platform == "tiktok":
+        videos = Tiktok.objects.filter(weekly_report=weekly_report_id).order_by("order")
+        video_serializer = TiktokSerializer(videos, many=True)
+    else:
+        videos = Instagram.objects.filter(weekly_report=weekly_report_id).order_by("order")
+        video_serializer = InstagramSerializer(videos, many=True)
+
+    return (videos, video_serializer)
 
 async def get_video_by_url(video_url):   
     async with AsyncTikTokAPI(navigation_retries=5, navigation_timeout=30) as api:
@@ -304,13 +314,13 @@ class WeeklyReportAPI(APIView):
     permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request, weekly_report_id):
-        tiktoks = Tiktok.objects.filter(weekly_report=weekly_report_id).order_by("order")
-        tiktok_serializer = TiktokSerializer(tiktoks, many=True)
 
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
         weekly_report_serializer = WeeklyReportSerializer(weekly_report)
 
-        return Response({"tiktok": tiktok_serializer.data, "weekly_report": weekly_report_serializer.data}, status=status.HTTP_200_OK)
+        videos, video_serializer = determine_platform(weekly_report.platform, weekly_report.id)
+
+        return Response({"videos": video_serializer.data, "weekly_report": weekly_report_serializer.data}, status=status.HTTP_200_OK)
     
     def put(self, request, weekly_report_id):
         weekly_report = WeeklyReport.objects.get(id=weekly_report_id)
@@ -344,19 +354,20 @@ class WeeklyReportsAPI(APIView):
             report["total_improvement_comments"] = 0
             report["total_improvement_favourites"] = 0
             report["last_updated"] = ""
-            tiktoks = Tiktok.objects.filter(weekly_report=report["id"])
 
-            for tiktok in tiktoks:
-                report["total_likes"] += tiktok.like_count
-                report["total_views"] += tiktok.view_count
-                report["total_comments"] += tiktok.comment_count
-                report["total_favourites"] += tiktok.favourite_count
-                report["total_improvement_likes"] += tiktok.improvement_like_count
-                report["total_improvement_views"] += tiktok.improvement_view_count
-                report["total_improvement_comments"] += tiktok.improvement_comment_count
-                report["total_improvement_favourites"] += tiktok.improvement_favourite_count
-                if (tiktok.last_updated != None):
-                    report["last_updated"] = tiktok.last_updated
+            videos, _ = determine_platform(report["platform"], report["id"])
+
+            for video in videos:
+                report["total_likes"] += video.like_count
+                report["total_views"] += video.view_count
+                report["total_comments"] += video.comment_count
+                report["total_favourites"] += video.favourite_count
+                report["total_improvement_likes"] += video.improvement_like_count
+                report["total_improvement_views"] += video.improvement_view_count
+                report["total_improvement_comments"] += video.improvement_comment_count
+                report["total_improvement_favourites"] += video.improvement_favourite_count
+                if (video.last_updated != None):
+                    report["last_updated"] = video.last_updated
   
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -364,20 +375,21 @@ class WeeklyReportsAPI(APIView):
         data = {
             "owner": request.user.id,
             "title": request.data.get("title"),
+            "platform": request.data.get("platform")
         }
-
 
         serializer = WeeklyReportSerializer(data=data)
         if serializer.is_valid():
             serializer_instance = serializer.save()
 
             get_videos_sync = async_to_sync(get_videos)
-            user_tag = Client.objects.get(user=request.user).tiktok_account
+            client = Client.objects.get(user=request.user)
+            user_tag = client.tiktok_account if data["platform"] == "tiktok" else client.instagram_account
     
             if user_tag == "":
                 user_tag = "cheekyglo"
 
-            serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")), user_tag)
+            serializer_instance = get_videos_sync(serializer_instance, int(request.data.get("number_of_videos")), user_tag, data["platform"])
 
             return_data = {
                 "title": serializer_instance.title,

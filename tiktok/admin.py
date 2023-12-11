@@ -7,7 +7,7 @@ class TiktokAdmin(admin.ModelAdmin):
 
 
 class WeeklyReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "owner")
+    list_display = ("id", "title", "owner", "platform")
 
 class ClientAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "tiktok_account")

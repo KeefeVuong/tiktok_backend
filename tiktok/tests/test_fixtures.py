@@ -37,7 +37,8 @@ def weekly_report(user):
     yield WeeklyReport.objects.create(
         title="Test Report",
         owner=user,
-        notes=""
+        notes="",
+        platform="tiktok"
     )
 
 @pytest.fixture
