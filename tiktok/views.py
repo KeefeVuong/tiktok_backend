@@ -188,6 +188,7 @@ class TiktokAPI(APIView):
         get_data(data, request.data.get("notes"), "notes")
         get_data(data, request.data.get("hook"), "hook")
         get_data(data, request.data.get("improvements"), "improvements")
+        get_data(data, request.data.get("other_platform_notes"), "other_platform_notes")
 
         if request.data.get("order") != None:
             og_order = tiktok.order

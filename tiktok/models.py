@@ -25,6 +25,7 @@ class Tiktok(models.Model):
     notes = models.TextField(null=True, blank=True)
     hook = models.TextField(null=True, blank=True)
     improvements = models.TextField(null=True, blank=True)
+    other_platform_notes = models.TextField(null=True, blank=True)
     url = models.TextField(null=True, blank=True)
     created = models.DateField()
     last_updated = models.DateField(null=True, blank=True)
