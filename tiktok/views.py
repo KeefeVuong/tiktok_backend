@@ -333,7 +333,7 @@ class WeeklyReportsAPI(APIView):
     permission_classes = [IsAuthenticated, IsGuestUser]
 
     def get(self, request):
-        weekly_reports = WeeklyReport.objects.filter(owner=request.user.id)
+        weekly_reports = WeeklyReport.objects.filter(owner=request.user.id).order_by("-created_date")
         serializer = WeeklyReportSerializer(weekly_reports, many=True)
         for report in serializer.data:  
             report["total_likes"] = 0
@@ -365,8 +365,8 @@ class WeeklyReportsAPI(APIView):
         data = {
             "owner": request.user.id,
             "title": request.data.get("title"),
+            # "created_date": datetime.today().strftime('%d/%m/%y')
         }
-
 
         serializer = WeeklyReportSerializer(data=data)
         if serializer.is_valid():

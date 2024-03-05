@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import datetime
 
 class Client(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -9,6 +10,11 @@ class WeeklyReport(models.Model):
     title = models.TextField()
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     notes = models.TextField(null=True, blank=True)
+    created_date = models.DateField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.created_date = datetime.today().strftime('20%y-%m-%d')
+        super().save(*args, **kwargs)
 
 class Tiktok(models.Model):
     weekly_report = models.ForeignKey(WeeklyReport, on_delete=models.CASCADE)
